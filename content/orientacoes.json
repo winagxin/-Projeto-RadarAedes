@@ -1,0 +1,65 @@
+{
+  "aviso_revisao": "REVISAR: Todos os textos de saúde abaixo são provisórios e devem ser conferidos pela dupla em fontes oficiais (Ministério da Saúde, Secretaria Estadual/Municipal de Saúde e documentação do InfoDengue) antes da apresentação.",
+  "niveis": [
+    {
+      "nivel": 1,
+      "cor": "verde",
+      "titulo": "Verde — Baixo risco",
+      "resumo": "REVISAR: Condições climáticas pouco favoráveis ou baixa circulação viral registrada na semana epidemiológica.",
+      "eliminar_agua_parada": [
+        "REVISAR: Verificar e esvaziar semanalmente recipientes que acumulam água (pratos de plantas, calhas, ralos e garrafas).",
+        "REVISAR: Manter caixas d'água, tonéis e lixeiras bem tampados."
+      ],
+      "sinais_alarme": [
+        "REVISAR: Mesmo em nível verde, febre alta de início súbito associada a dor de cabeça, dor atrás dos olhos ou manchas no corpo merece avaliação em serviço de saúde."
+      ],
+      "quando_procurar_ubs": "REVISAR: Procurar a Unidade Básica de Saúde (UBS) mais próxima se apresentar sintomas suspeitos para notificação e orientação adequada.",
+      "fonte_conferencia": "REVISAR: Conferir recomendações oficiais em gov.br/saude (Combate ao Aedes)."
+    },
+    {
+      "nivel": 2,
+      "cor": "amarelo",
+      "titulo": "Amarelo — Atenção",
+      "resumo": "REVISAR: Condições climáticas favoráveis à proliferação do mosquito Aedes aegypti combinadas com registro de circulação viral.",
+      "eliminar_agua_parada": [
+        "REVISAR: Realizar vistoria de 10 minutos por semana no quintal, área de serviço e escola para eliminar criadouros.",
+        "REVISAR: Lavar com escova e sabão os bebedouros de animais e recipientes que já tiveram água parada."
+      ],
+      "sinais_alarme": [
+        "REVISAR: Dor abdominal intensa e contínua, vômitos persistentes, tontura ao levantar ou sangramentos exigem atendimento imediato."
+      ],
+      "quando_procurar_ubs": "REVISAR: Em caso de febre e sintomas compatíveis, procurar a UBS para avaliação clínica e hidratação orientada; evitar automedicação.",
+      "fonte_conferencia": "REVISAR: Conferir protocolo oficial de atenção básica e manejo clínico do Ministério da Saúde."
+    },
+    {
+      "nivel": 3,
+      "cor": "laranja",
+      "titulo": "Laranja — Risco de epidemia",
+      "resumo": "REVISAR: Transmissão sustentada com incidência crescente e acima do esperado para o período histórico no município.",
+      "eliminar_agua_parada": [
+        "REVISAR: Redobrar inspeções em imóveis, terrenos, escolas e espaços comunitários, acionando agentes de endemias quando houver focos em áreas públicas.",
+        "REVISAR: Descartar corretamente pneus, latas e resíduos que possam reter água da chuva."
+      ],
+      "sinais_alarme": [
+        "REVISAR: Dor abdominal forte, vômitos repetidos, queda de pressão, sangramento de nariz/gengiva ou sonolência/irritabilidade intensa são sinais de alarme."
+      ],
+      "quando_procurar_ubs": "REVISAR: Procurar a UBS logo no início dos sintomas e buscar atendimento de urgência (UPA ou SAMU 192) imediatamente diante de qualquer sinal de alarme.",
+      "fonte_conferencia": "REVISAR: Conferir sinais de alarme oficiais do Ministério da Saúde."
+    },
+    {
+      "nivel": 4,
+      "cor": "vermelho",
+      "titulo": "Vermelho — Epidemia",
+      "resumo": "REVISAR: Alta incidência acima dos limiares epidêmicos históricos, exigindo mobilização comunitária e vigilância máxima.",
+      "eliminar_agua_parada": [
+        "REVISAR: Mobilizar moradores, escolas e lideranças locais para mutirões frequentes de eliminação de criadouros e facilitação do trabalho dos agentes de saúde.",
+        "REVISAR: Proteger janelas e berços/camas com telas ou mosquiteiros e usar repelente conforme orientação sanitária."
+      ],
+      "sinais_alarme": [
+        "REVISAR: Dor abdominal intensa, vômitos persistentes, acúmulo de líquidos, sangramento de mucosas, letargia ou queda brusca de plaquetas exigem urgência imediata."
+      ],
+      "quando_procurar_ubs": "REVISAR: Buscar a UBS ou ponto de hidratação municipal ao primeiro sinal de febre; em casos graves ou sinais de alarme, ir imediatamente à emergência ou ligar para o SAMU 192.",
+      "fonte_conferencia": "REVISAR: Conferir plano de contingência estadual/municipal e guia oficial do Ministério da Saúde."
+    }
+  ]
+}
