@@ -1,6 +1,8 @@
 {
-  "name": "",
-  "description": "",
+  "name": "RadarAedes",
+  "description": "Semáforo de alerta de arboviroses (dengue, chikungunya e zika) por município brasileiro com histórico e orientações.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

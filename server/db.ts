@@ -72,9 +72,10 @@ export function getDb(customPath?: string): DatabaseSync {
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
   const db = new DatabaseSync(dbPath);
-  // Garante integridade referencial entre municipios, consultas_alerta e alerta_semanal
+  // Garante integridade referencial e evita travamento/conflito entre servidor e scripts CLI
+  db.exec('PRAGMA busy_timeout = 5000;');
   db.exec('PRAGMA foreign_keys = ON;');
-  db.exec('PRAGMA journal_mode = WAL;');
+  db.exec('PRAGMA journal_mode = DELETE;');
 
   if (!customPath) {
     dbInstance = db;
@@ -326,7 +327,7 @@ export function seedFromLocalSamples(db: DatabaseSync = getDb()): {
             nome_municipio: rawInfo[0].municipio_nome || 'Rio de Janeiro',
             uf: 'RJ',
             doenca: 'dengue',
-            fonte: 'Amostra local (InfoDengue)',
+            fonte: 'Amostra local',
             modo_offline: true,
             data_coleta: `${versao}T12:00:00.000Z`,
             itens: rawInfo,
@@ -399,6 +400,66 @@ export function buscarSerieHistorica(
 
   // Retorna em ordem cronológica (mais antiga -> mais recente) para gráficos
   return rows.reverse();
+}
+
+export interface AlertaResumoUfRow {
+  codigo_ibge: string;
+  nome: string;
+  uf: string;
+  semana_epi: number | null;
+  nivel: number | null;
+  casos_est: number | null;
+  incidencia_100k: number | null;
+  versao_modelo: string | null;
+  data_coleta: string | null;
+  fonte: string | null;
+  modo_offline: number | null;
+}
+
+export function buscarUltimosAlertasPorUf(
+  uf: string,
+  doenca: Doenca,
+  db: DatabaseSync = getDb()
+): AlertaResumoUfRow[] {
+  return db
+    .prepare(
+      `SELECT
+         m.codigo_ibge,
+         m.nome,
+         m.uf,
+         a.semana_epi,
+         a.nivel,
+         a.casos_est,
+         a.incidencia_100k,
+         a.versao_modelo,
+         c.data_coleta,
+         c.fonte,
+         c.modo_offline
+       FROM municipios m
+       LEFT JOIN (
+         SELECT c1.*
+         FROM consultas_alerta c1
+         INNER JOIN (
+           SELECT codigo_ibge, MAX(id) AS max_id
+           FROM consultas_alerta
+           WHERE doenca = ? AND is_teste = 0
+           GROUP BY codigo_ibge
+         ) c2 ON c1.id = c2.max_id
+       ) c ON c.codigo_ibge = m.codigo_ibge
+       LEFT JOIN (
+         SELECT a1.*
+         FROM alerta_semanal a1
+         INNER JOIN (
+           SELECT codigo_ibge, MAX(semana_epi) AS max_se
+           FROM alerta_semanal
+           WHERE doenca = ? AND is_teste = 0
+           GROUP BY codigo_ibge
+         ) a2 ON a1.codigo_ibge = a2.codigo_ibge AND a1.semana_epi = a2.max_se AND a1.doenca = ?
+       ) a ON a.codigo_ibge = m.codigo_ibge
+       WHERE m.uf = ? AND m.is_teste = 0
+       ORDER BY m.nome ASC`
+    )
+    .all(doenca, doenca, doenca, uf.toUpperCase()) as unknown as AlertaResumoUfRow[];
 }
 
 export function buscarCacheMalhaUf(
