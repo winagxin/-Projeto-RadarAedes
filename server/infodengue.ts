@@ -524,6 +524,7 @@ export interface ItemMapaMunicipio {
   nome: string;
   uf: string;
   semana_epi: number | null;
+  data_ini_se: number | null;
   nivel: number | null;
   casos_est: number | null;
   incidencia_100k: number | null;
@@ -597,6 +598,7 @@ export async function streamMapaUf(
         nome: row.nome,
         uf: row.uf,
         semana_epi: row.semana_epi,
+        data_ini_se: row.data_ini_se,
         nivel: row.nivel,
         casos_est: row.casos_est,
         incidencia_100k: row.incidencia_100k,
@@ -615,6 +617,7 @@ export async function streamMapaUf(
           nome: row.nome,
           uf: row.uf,
           semana_epi: row.semana_epi,
+          data_ini_se: row.data_ini_se,
           nivel: row.nivel,
           casos_est: row.casos_est,
           incidencia_100k: row.incidencia_100k,
@@ -630,6 +633,7 @@ export async function streamMapaUf(
           nome: row.nome,
           uf: row.uf,
           semana_epi: topoAmostra.SE,
+          data_ini_se: topoAmostra.data_iniSE ?? null,
           nivel: topoAmostra.nivel,
           casos_est: topoAmostra.casos_est ?? null,
           incidencia_100k: topoAmostra.p_inc100k ?? null,
@@ -645,6 +649,7 @@ export async function streamMapaUf(
           nome: row.nome,
           uf: row.uf,
           semana_epi: null,
+          data_ini_se: null,
           nivel: null,
           casos_est: null,
           incidencia_100k: null,
@@ -737,6 +742,7 @@ export async function streamMapaUf(
           nome: alvo.nome,
           uf: alvo.uf,
           semana_epi: topo?.SE ?? null,
+          data_ini_se: topo?.data_iniSE ?? null,
           nivel: topo?.nivel ?? null,
           casos_est: topo?.casos_est ?? null,
           incidencia_100k: topo?.p_inc100k ?? null,
@@ -757,6 +763,7 @@ export async function streamMapaUf(
           nome: alvo.nome,
           uf: alvo.uf,
           semana_epi: fb?.semana_epi ?? topoAmostra?.SE ?? null,
+          data_ini_se: fb?.data_ini_se ?? topoAmostra?.data_iniSE ?? null,
           nivel: fb?.nivel ?? topoAmostra?.nivel ?? null,
           casos_est: fb?.casos_est ?? topoAmostra?.casos_est ?? null,
           incidencia_100k: fb?.incidencia_100k ?? topoAmostra?.p_inc100k ?? null,

@@ -407,6 +407,7 @@ export interface AlertaResumoUfRow {
   nome: string;
   uf: string;
   semana_epi: number | null;
+  data_ini_se: number | null;
   nivel: number | null;
   casos_est: number | null;
   incidencia_100k: number | null;
@@ -428,6 +429,7 @@ export function buscarUltimosAlertasPorUf(
          m.nome,
          m.uf,
          a.semana_epi,
+         a.data_ini_se,
          a.nivel,
          a.casos_est,
          a.incidencia_100k,

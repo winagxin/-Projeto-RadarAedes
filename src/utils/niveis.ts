@@ -70,10 +70,50 @@ export const NOMES_DOENCA: Record<Doenca, string> = {
   zika: 'Zika',
 };
 
-export function formatarSemanaEpi(se: number): string {
+export function formatarSemanaEpi(se: number, dataIniSe?: number | null): string {
   const txt = String(se);
   if (txt.length !== 6) return txt;
-  return `SE ${txt.slice(4)}/${txt.slice(0, 4)}`;
+  const ano = txt.slice(0, 4);
+  const semanaNum = Number(txt.slice(4));
+  const base = `Semana ${Number.isFinite(semanaNum) ? semanaNum : txt.slice(4)} de ${ano}`;
+
+  if (!dataIniSe || !Number.isFinite(dataIniSe)) {
+    return base;
+  }
+
+  const ini = new Date(dataIniSe);
+  const fim = new Date(dataIniSe + 6 * 86400000);
+  if (Number.isNaN(ini.getTime()) || Number.isNaN(fim.getTime())) {
+    return base;
+  }
+
+  const d1 = ini.getUTCDate();
+  const m1 = String(ini.getUTCMonth() + 1).padStart(2, '0');
+  const d2 = fim.getUTCDate();
+  const m2 = String(fim.getUTCMonth() + 1).padStart(2, '0');
+  const periodo = m1 === m2 ? `${d1} a ${d2}/${m2}` : `${d1}/${m1} a ${d2}/${m2}`;
+  return `${base} (${periodo})`;
+}
+
+export function formatarNumeroPtBr(
+  valor: number | null | undefined,
+  maxCasas = 1,
+  minCasas = 0
+): string {
+  if (valor === null || valor === undefined || !Number.isFinite(valor)) return 'N/D';
+  return valor.toLocaleString('pt-BR', {
+    minimumFractionDigits: minCasas,
+    maximumFractionDigits: maxCasas,
+  });
+}
+
+export function formatarPercentualPtBr(valor: number | null | undefined): string {
+  if (valor === null || valor === undefined || !Number.isFinite(valor)) return '';
+  const sinal = valor > 0 ? '+' : '';
+  return `${sinal}${valor.toLocaleString('pt-BR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  })}%`;
 }
 
 export function formatarDataPtBr(valor: string | number | null | undefined): string {

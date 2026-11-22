@@ -1,7 +1,16 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { ArrowRight, MapPin, Search, WifiOff } from 'lucide-react';
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+  MapPin,
+  OctagonAlert,
+  Search,
+  ShieldCheck,
+  WifiOff,
+} from 'lucide-react';
 import { Doenca, EstadoItem, MunicipioItem } from '../types';
-import { formatarDataPtBr, NOMES_DOENCA } from '../utils/niveis';
+import { formatarDataPtBr, NIVEIS_ALERTA, NOMES_DOENCA } from '../utils/niveis';
 
 interface InicioPageProps {
   ufSelecionada: string;
@@ -179,13 +188,13 @@ export function InicioPage({
     <div className="mx-auto max-w-4xl space-y-6">
       <section className="space-y-3">
         <p className="text-sm font-medium text-slate-600">
-          Vigilância pública municipal · Dados abertos InfoDengue e IBGE
+          Dados abertos do InfoDengue e do IBGE
         </p>
         <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
-          Consulte o semáforo de arboviroses do seu município
+          Consulte o semáforo de dengue, chikungunya e zika do seu município
         </h1>
         <p className="max-w-2xl text-base leading-relaxed text-slate-700">
-          Veja o nível de alerta oficial (verde, amarelo, laranja ou vermelho), a tendência das
+          Veja o nível de alerta do InfoDengue (verde, amarelo, laranja ou vermelho), a tendência das
           últimas semanas e orientações práticas para moradores, escolas e agentes de saúde.
         </p>
       </section>
@@ -338,9 +347,6 @@ export function InicioPage({
                           <MapPin className="h-4 w-4 text-slate-500" aria-hidden="true" />
                           {mun.nome}
                         </span>
-                        <span className="font-mono-tabular text-xs text-slate-600">
-                          {mun.codigo_ibge}
-                        </span>
                       </li>
                     );
                   })
@@ -352,8 +358,8 @@ export function InicioPage({
 
         {/* Seleção de doença */}
         <fieldset className="mt-5">
-          <legend className="text-sm font-semibold text-slate-900">Arbovirose consultada</legend>
-          <div className="mt-2 grid grid-cols-3 gap-2 sm:max-w-md">
+          <legend className="text-sm font-semibold text-slate-900">Qual doença?</legend>
+          <div className="mt-2 grid grid-cols-1 gap-2 sm:max-w-md sm:grid-cols-3">
             {(['dengue', 'chikungunya', 'zika'] as Doenca[]).map((d) => {
               const ativo = doencaSelecionada === d;
               return (
@@ -362,7 +368,7 @@ export function InicioPage({
                   type="button"
                   aria-pressed={ativo}
                   onClick={() => onChangeDoenca(d)}
-                  className={`min-h-[44px] rounded-lg border px-3 py-2 text-sm font-semibold whitespace-nowrap transition-colors ${
+                  className={`min-h-[44px] rounded-lg border px-3 py-2 text-center text-sm font-semibold leading-tight transition-colors ${
                     ativo
                       ? 'border-slate-950 bg-slate-900 text-white'
                       : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-100'
@@ -379,8 +385,7 @@ export function InicioPage({
           <p className="text-sm text-slate-600">
             {municipioEscolhido ? (
               <>
-                Selecionado: <strong className="text-slate-900">{municipioEscolhido.nome}</strong> (
-                <span className="font-mono-tabular">{municipioEscolhido.codigo_ibge}</span>) ·{' '}
+                Selecionado: <strong className="text-slate-900">{municipioEscolhido.nome}</strong> ·{' '}
                 {NOMES_DOENCA[doencaSelecionada]}
               </>
             ) : (
@@ -391,13 +396,57 @@ export function InicioPage({
           <button
             type="submit"
             disabled={carregandoMunicipios}
-            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white whitespace-nowrap transition-colors hover:bg-blue-800 disabled:opacity-50"
+            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-800 disabled:opacity-50"
           >
             Ver painel do município
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </form>
+
+      {/* Bloco "Como ler o semáforo" com os 4 níveis (cor, ícone e texto) */}
+      <section
+        aria-labelledby="titulo-como-ler-semaforo"
+        className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+      >
+        <h2 id="titulo-como-ler-semaforo" className="text-lg font-bold text-slate-950">
+          Como ler o semáforo
+        </h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Cada município recebe um nível de alerta do InfoDengue, sempre identificado por cor, ícone
+          e texto:
+        </p>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {[1, 2, 3, 4].map((nivelNum) => {
+            const cfg = NIVEIS_ALERTA[nivelNum];
+            const Icone =
+              nivelNum === 1
+                ? ShieldCheck
+                : nivelNum === 2
+                ? AlertCircle
+                : nivelNum === 3
+                ? AlertTriangle
+                : OctagonAlert;
+            return (
+              <div
+                key={nivelNum}
+                className={`flex items-start gap-3 rounded-xl border-2 p-3.5 ${cfg.borderClass} ${cfg.bgCardClass} ${cfg.textClass}`}
+              >
+                <span
+                  className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${cfg.iconBgClass}`}
+                >
+                  <Icone className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold">{cfg.rotulo}</h3>
+                  <p className="mt-0.5 text-xs leading-relaxed">{cfg.descricaoCurta}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       {fonteInfo && (
         <p className="text-xs text-slate-600">

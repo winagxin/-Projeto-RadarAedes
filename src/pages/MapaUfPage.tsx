@@ -13,6 +13,7 @@ import {
 import { Doenca, EstadoItem } from '../types';
 import {
   formatarDataPtBr,
+  formatarNumeroPtBr,
   formatarSemanaEpi,
   NIVEIS_ALERTA,
   NOMES_DOENCA,
@@ -24,6 +25,7 @@ interface ItemMapa {
   nome: string;
   uf: string;
   semana_epi: number | null;
+  data_ini_se: number | null;
   nivel: number | null;
   casos_est: number | null;
   incidencia_100k: number | null;
@@ -120,22 +122,21 @@ function montarHtmlDadosMunicipio(info: ItemMapa | undefined, codigoIbge: string
 
   const cfg = obterConfigNivel(info.nivel);
   const nivelTexto = cfg ? cfg.rotulo : `Nível ${info.nivel}`;
-  const semanaTexto = info.semana_epi ? formatarSemanaEpi(info.semana_epi) : 'Sem leitura';
-  const casosTexto =
-    info.casos_est !== null
-      ? info.casos_est.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
-      : 'N/D';
+  const semanaTexto = info.semana_epi
+    ? formatarSemanaEpi(info.semana_epi, info.data_ini_se)
+    : 'Sem leitura';
+  const casosTexto = formatarNumeroPtBr(info.casos_est, 1, 0);
   const incidenciaTexto =
-    info.incidencia_100k !== null ? `${info.incidencia_100k.toFixed(1)} / 100 mil` : 'N/D';
+    info.incidencia_100k !== null ? formatarNumeroPtBr(info.incidencia_100k, 1, 1) : 'N/D';
   const poucosCasos = info.casos_est !== null && info.casos_est < LIMITE_POUCOS_CASOS;
 
   return `
     <div class="space-y-1 text-xs sm:text-sm text-slate-900">
       <p class="font-bold text-slate-950">${escapeHtml(info.nome)} (${escapeHtml(info.uf)})</p>
       <p class="font-semibold text-slate-800">${escapeHtml(nivelTexto)}</p>
-      <p class="text-xs text-slate-700">Semana: <strong>${escapeHtml(semanaTexto)}</strong></p>
+      <p class="text-xs text-slate-700"><strong>${escapeHtml(semanaTexto)}</strong></p>
       <p class="text-xs text-slate-700">Casos estimados: <strong>${escapeHtml(casosTexto)}</strong></p>
-      <p class="text-xs text-slate-700">Incidência: <strong>${escapeHtml(incidenciaTexto)}</strong></p>
+      <p class="text-xs text-slate-700">Casos por 100 mil habitantes: <strong>${escapeHtml(incidenciaTexto)}</strong></p>
       ${
         poucosCasos
           ? '<p class="text-xs font-semibold text-amber-900">Aviso: poucos casos: variação instável</p>'
@@ -269,7 +270,7 @@ export function MapaUfPage({
     if (info) {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.textContent = 'Abrir painel completo';
+      btn.textContent = 'Ver painel do município';
       btn.className =
         'mt-2 inline-flex min-h-[38px] w-full items-center justify-center rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800';
       btn.onclick = () => {
@@ -604,7 +605,7 @@ export function MapaUfPage({
           <div
             role="group"
             aria-label="Selecionar doença no mapa"
-            className="inline-flex rounded-lg border border-slate-300 bg-slate-100 p-1"
+            className="flex flex-wrap gap-1 rounded-lg border border-slate-300 bg-slate-100 p-1"
           >
             {(['dengue', 'chikungunya', 'zika'] as Doenca[]).map((d) => {
               const ativo = doencaInicial === d;
@@ -614,7 +615,7 @@ export function MapaUfPage({
                   type="button"
                   aria-pressed={ativo}
                   onClick={() => onChangeDoenca(d)}
-                  className={`min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
+                  className={`min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight transition-colors ${
                     ativo ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-200'
                   }`}
                 >
@@ -832,7 +833,7 @@ export function MapaUfPage({
                 <th scope="col" className="py-2.5 pr-4">Código IBGE</th>
                 <th scope="col" className="py-2.5 pr-4">Nível</th>
                 <th scope="col" className="py-2.5 pr-4 text-right">Casos est.</th>
-                <th scope="col" className="py-2.5 pr-4 text-right">Incidência / 100 mil</th>
+                <th scope="col" className="py-2.5 pr-4 text-right">Casos por 100 mil habitantes</th>
                 <th scope="col" className="py-2.5 text-right">Ações</th>
               </tr>
             </thead>
@@ -870,12 +871,10 @@ export function MapaUfPage({
                         {cfg ? cfg.rotulo : 'Sem informação'}
                       </td>
                       <td className="py-2.5 pr-4 text-right text-slate-800">
-                        {item.casos_est !== null
-                          ? item.casos_est.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
-                          : 'N/D'}
+                        {formatarNumeroPtBr(item.casos_est, 1, 0)}
                       </td>
                       <td className="py-2.5 pr-4 text-right text-slate-700">
-                        {item.incidencia_100k !== null ? item.incidencia_100k.toFixed(1) : 'N/D'}
+                        {formatarNumeroPtBr(item.incidencia_100k, 1, 1)}
                       </td>
                       <td className="py-2.5 text-right">
                         <div className="inline-flex items-center gap-2">
@@ -904,7 +903,7 @@ export function MapaUfPage({
                             }
                             className="min-h-[36px] rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-100"
                           >
-                            Ver painel
+                            Ver painel do município
                           </button>
                         </div>
                       </td>

@@ -17,6 +17,8 @@ import { SemaforoCard } from '../components/SemaforoCard';
 import { Doenca, MunicipioItem, RespostaAlertaMunicipio } from '../types';
 import {
   formatarDataPtBr,
+  formatarNumeroPtBr,
+  formatarPercentualPtBr,
   formatarSemanaEpi,
   NOMES_DOENCA,
   rotuloTendencia,
@@ -151,7 +153,7 @@ export function PainelMunicipioPage({
         <div
           role="group"
           aria-label="Selecionar doença no painel"
-          className="inline-flex rounded-lg border border-slate-300 bg-slate-100 p-1 self-start sm:self-auto"
+          className="flex flex-wrap gap-1 self-start rounded-lg border border-slate-300 bg-slate-100 p-1 sm:self-auto"
         >
           {(['dengue', 'chikungunya', 'zika'] as Doenca[]).map((d) => {
             const ativo = doenca === d;
@@ -161,7 +163,7 @@ export function PainelMunicipioPage({
                 type="button"
                 aria-pressed={ativo}
                 onClick={() => onChangeDoenca(d)}
-                className={`min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
+                className={`min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight transition-colors ${
                   ativo ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-200'
                 }`}
               >
@@ -259,12 +261,12 @@ export function PainelMunicipioPage({
           {dados.vazio ? (
             <section className="rounded-xl border border-slate-200 bg-white p-6">
               <h2 className="text-lg font-bold text-slate-900">
-                Sem registros recentes para {NOMES_DOENCA[dados.doenca]}
+                Sem registros para {NOMES_DOENCA[dados.doenca]}
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-700">
-                A fonte oficial (InfoDengue) respondeu sem séries semanais ativas para{' '}
-                <strong>{NOMES_DOENCA[dados.doenca]}</strong> em{' '}
-                <strong>{dados.municipio.nome}</strong> nas últimas semanas consultadas.
+                Não há casos de {NOMES_DOENCA[dados.doenca].toLowerCase()} registrados no
+                InfoDengue para este município em {new Date().getFullYear()}. Isso não significa
+                ausência de risco: pode haver atraso ou falta de notificação.
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <button
@@ -301,7 +303,8 @@ export function PainelMunicipioPage({
                   <Info className="mt-0.5 h-5 w-5 shrink-0 text-slate-700" aria-hidden="true" />
                   <p>
                     <strong>
-                      Atenção sobre a semana mais recente ({formatarSemanaEpi(dados.semanaAtual)}):
+                      Atenção sobre a semana mais recente (
+                      {formatarSemanaEpi(dados.semanaAtual, ultimaSemana?.data_ini_se)}):
                     </strong>{' '}
                     os números desta semana podem estar incompletos por atraso de notificação e
                     costumam ser atualizados nas próximas coletas.
@@ -315,22 +318,18 @@ export function PainelMunicipioPage({
                 className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
               >
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-semibold text-slate-600">Casos estimados (última SE)</p>
+                  <p className="text-xs font-semibold text-slate-600">Casos estimados (última semana)</p>
                   <p className="mt-1 text-2xl font-bold text-slate-950 tabular-nums">
-                    {ultimaSemana?.casos_est !== null && ultimaSemana?.casos_est !== undefined
-                      ? ultimaSemana.casos_est.toLocaleString('pt-BR', {
-                          maximumFractionDigits: 1,
-                        })
-                      : 'N/D'}
+                    {formatarNumeroPtBr(ultimaSemana?.casos_est, 1, 0)}
                   </p>
                   <p className="mt-1 text-xs text-slate-600 tabular-nums">
                     Intervalo:{' '}
                     {ultimaSemana?.casos_est_min !== null &&
                     ultimaSemana?.casos_est_max !== null &&
                     ultimaSemana !== null
-                      ? `${Math.round(ultimaSemana.casos_est_min)} a ${Math.round(
+                      ? `${Math.round(ultimaSemana.casos_est_min).toLocaleString('pt-BR')} a ${Math.round(
                           ultimaSemana.casos_est_max
-                        )}`
+                        ).toLocaleString('pt-BR')}`
                       : 'N/D'}
                   </p>
                 </div>
@@ -348,12 +347,9 @@ export function PainelMunicipioPage({
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-semibold text-slate-600">Incidência / 100 mil hab.</p>
+                  <p className="text-xs font-semibold text-slate-600">Casos por 100 mil habitantes</p>
                   <p className="mt-1 text-2xl font-bold text-slate-950 tabular-nums">
-                    {ultimaSemana?.incidencia_100k !== null &&
-                    ultimaSemana?.incidencia_100k !== undefined
-                      ? ultimaSemana.incidencia_100k.toFixed(1)
-                      : 'N/D'}
+                    {formatarNumeroPtBr(ultimaSemana?.incidencia_100k, 1, 1)}
                   </p>
                   <p className="mt-1 text-xs text-slate-600">Taxa semanal estimada</p>
                 </div>
@@ -369,30 +365,25 @@ export function PainelMunicipioPage({
                     </span>
                     {dados.variacaoPercentual !== null && (
                       <span className="font-mono-tabular text-xs font-semibold text-slate-700">
-                        ({dados.variacaoPercentual > 0 ? '+' : ''}
-                        {dados.variacaoPercentual}%)
+                        ({formatarPercentualPtBr(dados.variacaoPercentual)})
                       </span>
                     )}
                   </div>
                   <p className="mt-1 text-xs text-slate-700 tabular-nums">
                     {dados.casosAnterior !== null && dados.casosAtual !== null ? (
                       <>
-                        de{' '}
-                        <strong>
-                          {dados.casosAnterior.toLocaleString('pt-BR', {
-                            maximumFractionDigits: 1,
-                          })}
-                        </strong>{' '}
-                        para{' '}
-                        <strong>
-                          {dados.casosAtual.toLocaleString('pt-BR', {
-                            maximumFractionDigits: 1,
-                          })}
-                        </strong>{' '}
-                        casos estimados
+                        de <strong>{formatarNumeroPtBr(dados.casosAnterior, 1, 0)}</strong> para{' '}
+                        <strong>{formatarNumeroPtBr(dados.casosAtual, 1, 0)}</strong> casos
+                        estimados
                         {dados.semanasComparadas
-                          ? ` (${formatarSemanaEpi(dados.semanasComparadas[0])} → ${formatarSemanaEpi(
-                              dados.semanasComparadas[1]
+                          ? ` (${formatarSemanaEpi(
+                              dados.semanasComparadas[0],
+                              dados.serie.find((s) => s.semana_epi === dados.semanasComparadas?.[0])
+                                ?.data_ini_se
+                            )} → ${formatarSemanaEpi(
+                              dados.semanasComparadas[1],
+                              dados.serie.find((s) => s.semana_epi === dados.semanasComparadas?.[1])
+                                ?.data_ini_se
                             )})`
                           : ''}
                       </>
@@ -419,7 +410,7 @@ export function PainelMunicipioPage({
                   className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
                 >
                   <ShieldAlert className="h-4 w-4" aria-hidden="true" />
-                  O que fazer no Nível {dados.nivelAtual ?? 1}
+                  O que fazer neste nível
                 </button>
                 <button
                   type="button"

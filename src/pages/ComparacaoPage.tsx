@@ -22,6 +22,8 @@ import {
 } from '../types';
 import {
   formatarDataPtBr,
+  formatarNumeroPtBr,
+  formatarPercentualPtBr,
   formatarSemanaEpi,
   NOMES_DOENCA,
   obterConfigNivel,
@@ -222,7 +224,7 @@ export function ComparacaoPage({
         <div
           role="group"
           aria-label="Selecionar doença para comparação"
-          className="inline-flex self-start rounded-lg border border-slate-300 bg-slate-100 p-1 sm:self-auto"
+          className="flex flex-wrap gap-1 self-start rounded-lg border border-slate-300 bg-slate-100 p-1 sm:self-auto"
         >
           {(['dengue', 'chikungunya', 'zika'] as Doenca[]).map((d) => {
             const ativo = doenca === d;
@@ -232,7 +234,7 @@ export function ComparacaoPage({
                 type="button"
                 aria-pressed={ativo}
                 onClick={() => onChangeDoenca(d)}
-                className={`min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
+                className={`min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight transition-colors ${
                   ativo ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-200'
                 }`}
               >
@@ -305,7 +307,7 @@ export function ComparacaoPage({
               ) : (
                 municipiosFiltrados.map((m) => (
                   <option key={m.codigo_ibge} value={m.codigo_ibge}>
-                    {m.nome} ({m.codigo_ibge})
+                    {m.nome}
                   </option>
                 ))
               )}
@@ -391,9 +393,7 @@ export function ComparacaoPage({
                   <div className="space-y-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="font-mono-tabular text-xs text-slate-600">
-                          {mun.codigo_ibge} · {mun.uf}
-                        </p>
+                        <p className="text-xs font-medium text-slate-600">{mun.uf}</p>
                         <h2 className="text-lg font-bold text-slate-950">{mun.nome}</h2>
                       </div>
                       <button
@@ -432,7 +432,9 @@ export function ComparacaoPage({
                       <>
                         {d.vazio ? (
                           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                            Sem registros recentes para {NOMES_DOENCA[doenca]} no período.
+                            Não há casos de {NOMES_DOENCA[doenca].toLowerCase()} registrados no
+                            InfoDengue para este município em {new Date().getFullYear()}. Isso não
+                            significa ausência de risco: pode haver atraso ou falta de notificação.
                           </div>
                         ) : (
                           <>
@@ -446,7 +448,9 @@ export function ComparacaoPage({
                               <IconeNivel nivel={d.nivelAtual} />
                               <div>
                                 <p className="text-xs font-semibold">
-                                  {d.semanaAtual ? formatarSemanaEpi(d.semanaAtual) : 'Sem SE'}
+                                  {d.semanaAtual
+                                    ? formatarSemanaEpi(d.semanaAtual, ultimaSe?.data_ini_se)
+                                    : 'Sem leitura'}
                                 </p>
                                 <p className="text-sm font-bold">
                                   {cfg ? cfg.rotulo : `Nível ${d.nivelAtual}`}
@@ -458,20 +462,13 @@ export function ComparacaoPage({
                               <div>
                                 <dt className="text-xs text-slate-600">Casos estimados</dt>
                                 <dd className="font-bold text-slate-950">
-                                  {ultimaSe?.casos_est !== null && ultimaSe?.casos_est !== undefined
-                                    ? ultimaSe.casos_est.toLocaleString('pt-BR', {
-                                        maximumFractionDigits: 1,
-                                      })
-                                    : 'N/D'}
+                                  {formatarNumeroPtBr(ultimaSe?.casos_est, 1, 0)}
                                 </dd>
                               </div>
                               <div>
-                                <dt className="text-xs text-slate-600">Incidência / 100 mil</dt>
+                                <dt className="text-xs text-slate-600">Casos por 100 mil habitantes</dt>
                                 <dd className="font-bold text-slate-950">
-                                  {ultimaSe?.incidencia_100k !== null &&
-                                  ultimaSe?.incidencia_100k !== undefined
-                                    ? ultimaSe.incidencia_100k.toFixed(1)
-                                    : 'N/D'}
+                                  {formatarNumeroPtBr(ultimaSe?.incidencia_100k, 1, 1)}
                                 </dd>
                               </div>
                               <div className="col-span-2">
@@ -487,22 +484,14 @@ export function ComparacaoPage({
                                   <span>{tend?.titulo.replace('Tendência: ', '')}</span>
                                   {d.variacaoPercentual !== null && (
                                     <span className="font-mono-tabular text-xs text-slate-700">
-                                      ({d.variacaoPercentual > 0 ? '+' : ''}
-                                      {d.variacaoPercentual}%)
+                                      ({formatarPercentualPtBr(d.variacaoPercentual)})
                                     </span>
                                   )}
                                 </dd>
                                 {d.casosAnterior !== null && d.casosAtual !== null && (
                                   <p className="text-xs text-slate-600">
-                                    de{' '}
-                                    {d.casosAnterior.toLocaleString('pt-BR', {
-                                      maximumFractionDigits: 1,
-                                    })}{' '}
-                                    para{' '}
-                                    {d.casosAtual.toLocaleString('pt-BR', {
-                                      maximumFractionDigits: 1,
-                                    })}{' '}
-                                    casos est.
+                                    de {formatarNumeroPtBr(d.casosAnterior, 1, 0)} para{' '}
+                                    {formatarNumeroPtBr(d.casosAtual, 1, 0)} casos est.
                                     {d.poucosCasos ? ' · poucos casos: variação instável' : ''}
                                   </p>
                                 )}
@@ -519,7 +508,7 @@ export function ComparacaoPage({
                     onClick={() => onAbrirPainel(mun)}
                     className="mt-4 min-h-[42px] w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-100"
                   >
-                    Abrir painel completo
+                    Ver painel do município
                   </button>
                 </article>
               );
@@ -552,7 +541,7 @@ export function ComparacaoPage({
                 <th scope="col" className="py-2.5 pr-4">Semana</th>
                 <th scope="col" className="py-2.5 pr-4">Nível (texto)</th>
                 <th scope="col" className="py-2.5 pr-4 text-right">Casos estimados</th>
-                <th scope="col" className="py-2.5 pr-4 text-right">Incidência / 100 mil</th>
+                <th scope="col" className="py-2.5 pr-4 text-right">Casos por 100 mil habitantes</th>
                 <th scope="col" className="py-2.5 pr-4">Tendência</th>
                 <th scope="col" className="py-2.5 text-right">Ações</th>
               </tr>
@@ -584,7 +573,9 @@ export function ComparacaoPage({
                         </span>
                       </td>
                       <td className="py-2.5 pr-4 text-slate-700">
-                        {d?.semanaAtual ? formatarSemanaEpi(d.semanaAtual) : '—'}
+                        {d?.semanaAtual
+                          ? formatarSemanaEpi(d.semanaAtual, ultimaSe?.data_ini_se)
+                          : '—'}
                       </td>
                       <td className="py-2.5 pr-4 font-medium text-slate-900">
                         {item?.carregando
@@ -592,21 +583,14 @@ export function ComparacaoPage({
                           : item?.erro
                           ? 'Erro ao consultar'
                           : d?.vazio
-                          ? 'Sem registros no período'
+                          ? `Não há casos de ${NOMES_DOENCA[doenca].toLowerCase()} registrados no InfoDengue para este município em ${new Date().getFullYear()}. Isso não significa ausência de risco: pode haver atraso ou falta de notificação.`
                           : cfg?.rotulo ?? `Nível ${d?.nivelAtual}`}
                       </td>
                       <td className="py-2.5 pr-4 text-right text-slate-900">
-                        {ultimaSe?.casos_est !== null && ultimaSe?.casos_est !== undefined
-                          ? ultimaSe.casos_est.toLocaleString('pt-BR', {
-                              maximumFractionDigits: 1,
-                            })
-                          : 'N/D'}
+                        {formatarNumeroPtBr(ultimaSe?.casos_est, 1, 0)}
                       </td>
                       <td className="py-2.5 pr-4 text-right text-slate-700">
-                        {ultimaSe?.incidencia_100k !== null &&
-                        ultimaSe?.incidencia_100k !== undefined
-                          ? ultimaSe.incidencia_100k.toFixed(1)
-                          : 'N/D'}
+                        {formatarNumeroPtBr(ultimaSe?.incidencia_100k, 1, 1)}
                       </td>
                       <td className="py-2.5 pr-4 text-slate-800">
                         {d && !d.vazio ? (
@@ -614,20 +598,13 @@ export function ComparacaoPage({
                             <span>
                               {tend?.titulo.replace('Tendência: ', '')}
                               {d.variacaoPercentual !== null
-                                ? ` (${d.variacaoPercentual > 0 ? '+' : ''}${d.variacaoPercentual}%)`
+                                ? ` (${formatarPercentualPtBr(d.variacaoPercentual)})`
                                 : ''}
                             </span>
                             {d.casosAnterior !== null && d.casosAtual !== null && (
                               <span className="block text-xs text-slate-600">
-                                de{' '}
-                                {d.casosAnterior.toLocaleString('pt-BR', {
-                                  maximumFractionDigits: 1,
-                                })}{' '}
-                                para{' '}
-                                {d.casosAtual.toLocaleString('pt-BR', {
-                                  maximumFractionDigits: 1,
-                                })}{' '}
-                                casos est.
+                                de {formatarNumeroPtBr(d.casosAnterior, 1, 0)} para{' '}
+                                {formatarNumeroPtBr(d.casosAtual, 1, 0)} casos est.
                                 {d.poucosCasos ? ' · poucos casos: variação instável' : ''}
                               </span>
                             )}
@@ -643,7 +620,7 @@ export function ComparacaoPage({
                             onClick={() => onAbrirPainel(mun)}
                             className="min-h-[36px] rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-100"
                           >
-                            Ver painel
+                            Ver painel do município
                           </button>
                           <button
                             type="button"

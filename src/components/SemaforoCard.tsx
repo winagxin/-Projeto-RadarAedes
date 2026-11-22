@@ -51,9 +51,8 @@ export function SemaforoCard({ nivel, semanaAtual, dataIniSe, compacto = false }
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-700">
-              Semáforo de alerta oficial
-              {semanaAtual ? ` · ${formatarSemanaEpi(semanaAtual)}` : ''}
-              {dataIniSe ? ` (início em ${formatarDataPtBr(dataIniSe)})` : ''}
+              Semáforo de alerta do InfoDengue
+              {semanaAtual ? ` · ${formatarSemanaEpi(semanaAtual, dataIniSe)}` : ''}
             </p>
             <h2 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{cfg.rotulo}</h2>
             <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-800">

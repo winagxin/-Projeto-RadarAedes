@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { AlertaSemanalItem } from '../types';
-import { formatarDataPtBr, formatarSemanaEpi, obterConfigNivel } from '../utils/niveis';
+import {
+  formatarDataPtBr,
+  formatarNumeroPtBr,
+  formatarSemanaEpi,
+  obterConfigNivel,
+} from '../utils/niveis';
 
 interface GraficoTendenciaProps {
   serie: AlertaSemanalItem[];
@@ -146,7 +151,7 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
     indiceFoco !== null && pontos[indiceFoco] ? pontos[indiceFoco] : pontos[pontos.length - 1];
 
   const tituloMetrica =
-    metrica === 'casos_est' ? 'Casos estimados por semana' : 'Incidência por 100 mil habitantes';
+    metrica === 'casos_est' ? 'Casos estimados por semana' : 'Casos por 100 mil habitantes';
 
   return (
     <section
@@ -167,13 +172,13 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
           <div
             role="group"
             aria-label="Selecionar métrica do gráfico"
-            className="inline-flex rounded-lg border border-slate-300 bg-slate-100 p-1"
+            className="flex flex-wrap gap-1 rounded-lg border border-slate-300 bg-slate-100 p-1"
           >
             <button
               type="button"
               onClick={() => setMetrica('casos_est')}
               aria-pressed={metrica === 'casos_est'}
-              className={`min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight transition-colors ${
                 metrica === 'casos_est'
                   ? 'bg-slate-900 text-white'
                   : 'text-slate-700 hover:bg-slate-200'
@@ -185,13 +190,13 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
               type="button"
               onClick={() => setMetrica('incidencia_100k')}
               aria-pressed={metrica === 'incidencia_100k'}
-              className={`min-h-[38px] rounded-md px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight transition-colors ${
                 metrica === 'incidencia_100k'
                   ? 'bg-slate-900 text-white'
                   : 'text-slate-700 hover:bg-slate-200'
               }`}
             >
-              Incidência / 100 mil
+              Casos por 100 mil habitantes
             </button>
           </div>
 
@@ -199,7 +204,7 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
             type="button"
             onClick={() => setMostrarTabela((v) => !v)}
             aria-expanded={mostrarTabela}
-            className="min-h-[40px] rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 whitespace-nowrap hover:bg-slate-100"
+            className="min-h-[40px] rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-100"
           >
             {mostrarTabela ? 'Ocultar tabela em texto' : 'Ver alternativa em tabela'}
           </button>
@@ -244,31 +249,17 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
           className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800"
         >
           <span className="font-semibold tabular-nums">
-            {formatarSemanaEpi(pontoSelecionado.item.semana_epi)}
-          </span>
-          <span aria-hidden="true" className="text-slate-400">·</span>
-          <span className="tabular-nums">
-            Início: {formatarDataPtBr(pontoSelecionado.item.data_ini_se)}
+            {formatarSemanaEpi(pontoSelecionado.item.semana_epi, pontoSelecionado.item.data_ini_se)}
           </span>
           <span aria-hidden="true" className="text-slate-400">·</span>
           <span className="tabular-nums">
             Casos est.:{' '}
-            <strong>
-              {pontoSelecionado.item.casos_est !== null
-                ? pontoSelecionado.item.casos_est.toLocaleString('pt-BR', {
-                    maximumFractionDigits: 1,
-                  })
-                : 'N/D'}
-            </strong>
+            <strong>{formatarNumeroPtBr(pontoSelecionado.item.casos_est, 1, 0)}</strong>
           </span>
           <span aria-hidden="true" className="text-slate-400">·</span>
           <span className="tabular-nums">
-            Incidência:{' '}
-            <strong>
-              {pontoSelecionado.item.incidencia_100k !== null
-                ? `${pontoSelecionado.item.incidencia_100k.toFixed(1)} / 100 mil`
-                : 'N/D'}
-            </strong>
+            Casos por 100 mil habitantes:{' '}
+            <strong>{formatarNumeroPtBr(pontoSelecionado.item.incidencia_100k, 1, 1)}</strong>
           </span>
           <span aria-hidden="true" className="text-slate-400">·</span>
           <span>
@@ -349,10 +340,10 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
                 <g
                   tabIndex={0}
                   role="button"
-                  aria-label={`${formatarSemanaEpi(p.item.semana_epi)}: ${
+                  aria-label={`${formatarSemanaEpi(p.item.semana_epi, p.item.data_ini_se)}: ${
                     metrica === 'casos_est'
-                      ? `${p.val.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} casos estimados`
-                      : `${p.val.toFixed(1)} por 100 mil habitantes`
+                      ? `${formatarNumeroPtBr(p.val, 1, 0)} casos estimados`
+                      : `${formatarNumeroPtBr(p.val, 1, 1)} casos por 100 mil habitantes`
                   }, ${cfg?.rotulo || `nível ${p.item.nivel}`} (${formaPorNivel(p.item.nivel)})`}
                   onFocus={() => setIndiceFoco(p.idx)}
                   onMouseEnter={() => setIndiceFoco(p.idx)}
@@ -396,7 +387,7 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
               <th scope="col" className="py-2 pr-4">Nível (texto)</th>
               <th scope="col" className="py-2 pr-4 text-right">Casos estimados</th>
               <th scope="col" className="py-2 pr-4 text-right">Casos notificados</th>
-              <th scope="col" className="py-2 text-right">Incidência / 100 mil</th>
+              <th scope="col" className="py-2 text-right">Casos por 100 mil habitantes</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 tabular-nums">
@@ -405,22 +396,20 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
               return (
                 <tr key={s.semana_epi} className="hover:bg-slate-50">
                   <td className="py-2 pr-4 font-medium text-slate-900">
-                    {formatarSemanaEpi(s.semana_epi)}
+                    {formatarSemanaEpi(s.semana_epi, s.data_ini_se)}
                   </td>
                   <td className="py-2 pr-4 text-slate-700">{formatarDataPtBr(s.data_ini_se)}</td>
                   <td className="py-2 pr-4 text-slate-900">
                     {cfg?.rotulo ?? `Nível ${s.nivel}`}
                   </td>
                   <td className="py-2 pr-4 text-right font-medium text-slate-900">
-                    {s.casos_est !== null
-                      ? s.casos_est.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
-                      : 'N/D'}
+                    {formatarNumeroPtBr(s.casos_est, 1, 0)}
                   </td>
                   <td className="py-2 pr-4 text-right text-slate-700">
                     {s.casos !== null ? s.casos.toLocaleString('pt-BR') : 'N/D'}
                   </td>
                   <td className="py-2 text-right text-slate-700">
-                    {s.incidencia_100k !== null ? s.incidencia_100k.toFixed(2) : 'N/D'}
+                    {formatarNumeroPtBr(s.incidencia_100k, 2, 2)}
                   </td>
                 </tr>
               );
