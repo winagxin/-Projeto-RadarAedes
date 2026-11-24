@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Router } from 'express';
-import { buscarUltimosAlertasPorUf, Doenca } from './db.ts';
+import { buscarUltimosAlertasPorUf, type Doenca } from './db.ts';
 import {
   listarEstados,
   listarMunicipios,
@@ -163,14 +163,19 @@ export function criarApiRouter(): Router {
     }
 
     const raw = JSON.parse(fs.readFileSync(filePath, 'utf8')) as {
-      aviso_revisao: string;
+      atualizado_em?: string;
+      fontes?: Array<{ titulo: string; url: string }>;
       niveis: Array<{ nivel: number }>;
     };
 
     const nivelQuery = req.query.nivel ? Number(req.query.nivel) : null;
     if (nivelQuery && [1, 2, 3, 4].includes(nivelQuery)) {
       const encontrado = raw.niveis.find((n) => n.nivel === nivelQuery);
-      res.json({ aviso_revisao: raw.aviso_revisao, nivel: encontrado ?? null });
+      res.json({
+        atualizado_em: raw.atualizado_em,
+        fontes: raw.fontes ?? [],
+        nivel: encontrado ?? null,
+      });
       return;
     }
 

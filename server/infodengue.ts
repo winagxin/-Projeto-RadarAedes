@@ -7,8 +7,8 @@ import {
   buscarSerieHistorica,
   buscarUltimaConsulta,
   buscarUltimosAlertasPorUf,
-  Doenca,
-  InfoDengueItemBruto,
+  type Doenca,
+  type InfoDengueItemBruto,
   salvarCacheMalhaUf,
   salvarConsultaEAlertas,
   upsertMunicipios,
@@ -56,6 +56,7 @@ const ESTADOS_FALLBACK: EstadoInfo[] = [
 ];
 
 let cacheEstadosMem: { dados: EstadoInfo[]; coletadoEm: number } | null = null;
+const cacheUfsCompletasMem = new Map<string, number>();
 
 function estaDentroDoTtl(isoDate: string | null | undefined, ttlMs = CACHE_TTL_MS): boolean {
   if (!isoDate) return false;
@@ -168,46 +169,19 @@ export async function listarEstados() {
 export async function listarMunicipios(ufInput: string) {
   const uf = ufInput.trim().toUpperCase();
   const locais = buscarMunicipiosPorUf(uf);
+  const ultimaCargaCompleta = cacheUfsCompletasMem.get(uf);
 
-  // Se já temos os municípios desta UF no SQLite (exceto quando quisermos atualizar)
-  if (locais.length > 0 && uf === 'RJ') {
-    // Mesmo para RJ, tenta IBGE se estiver online; se já existir no banco, retorna rápido se IBGE falhar
-    try {
-      const raw = await fetchJsonComTimeout<Array<{ id: number | string; nome: string }>>(
-        `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${encodeURIComponent(uf)}/municipios`
-      );
-      if (Array.isArray(raw) && raw.length > 0) {
-        const formatados = raw.map((m) => ({
-          codigo_ibge: String(m.id),
-          nome: m.nome,
-          uf,
-        }));
-        upsertMunicipios(formatados);
-        return {
-          uf,
-          municipios: buscarMunicipiosPorUf(uf),
-          fonte: 'IBGE Localidades',
-          atualizadoEm: new Date().toISOString(),
-          modoOffline: false,
-        };
-      }
-    } catch {
-      return {
-        uf,
-        municipios: locais,
-        fonte: 'Amostra local',
-        atualizadoEm: '2026-11-22T00:00:00.000Z',
-        modoOffline: true,
-      };
-    }
-  }
-
-  if (locais.length > 0) {
+  if (
+    process.env.RADAR_FORCE_OFFLINE !== '1' &&
+    locais.length > 0 &&
+    ultimaCargaCompleta &&
+    Date.now() - ultimaCargaCompleta < CACHE_TTL_MS
+  ) {
     return {
       uf,
       municipios: locais,
       fonte: 'IBGE Localidades (cache local)',
-      atualizadoEm: new Date().toISOString(),
+      atualizadoEm: new Date(ultimaCargaCompleta).toISOString(),
       modoOffline: false,
     };
   }
@@ -222,11 +196,13 @@ export async function listarMunicipios(ufInput: string) {
       uf,
     }));
     upsertMunicipios(formatados);
+    const agora = Date.now();
+    cacheUfsCompletasMem.set(uf, agora);
     return {
       uf,
       municipios: buscarMunicipiosPorUf(uf),
       fonte: 'IBGE Localidades',
-      atualizadoEm: new Date().toISOString(),
+      atualizadoEm: new Date(agora).toISOString(),
       modoOffline: false,
     };
   } catch {
@@ -247,10 +223,19 @@ export async function listarMunicipios(ufInput: string) {
           uf: 'RJ',
           municipios: buscarMunicipiosPorUf('RJ'),
           fonte: 'Amostra local',
-          atualizadoEm: '2026-11-22T00:00:00.000Z',
+          atualizadoEm: '2026-11-22',
           modoOffline: true,
         };
       }
+    }
+    if (locais.length > 0) {
+      return {
+        uf,
+        municipios: locais,
+        fonte: 'Cache SQLite (modo offline)',
+        atualizadoEm: new Date().toISOString(),
+        modoOffline: true,
+      };
     }
     throw new Error(`Não foi possível carregar os municípios da UF ${uf}`);
   }
@@ -394,7 +379,7 @@ function carregarAmostraConsolidadaRj(
       return {
         itens: mun.doencas[doenca] || [],
         nome: mun.nome || `Município ${codigoIbge}`,
-        coletadoEm: raw.coletadoEm || '2026-11-22T00:00:00.000Z',
+        coletadoEm: raw.coletadoEm || '2026-11-22',
       };
     }
   }

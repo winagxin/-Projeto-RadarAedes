@@ -1,65 +1,99 @@
 {
-  "aviso_revisao": "REVISAR: Todos os textos de saúde abaixo são provisórios e devem ser conferidos pela dupla em fontes oficiais (Ministério da Saúde, Secretaria Estadual/Municipal de Saúde e documentação do InfoDengue) antes da apresentação.",
+  "atualizado_em": "2026-11-23",
+  "fontes": [
+    {
+      "titulo": "Diretrizes Nacionais para Prevenção e Controle de Epidemias de Dengue (Ministério da Saúde)",
+      "url": "https://www.gov.br/saude/pt-br/centrais-de-conteudo/publicacoes/svsa/dengue/diretrizes_nacionais_prevencao_controle_dengue.pdf"
+    },
+    {
+      "titulo": "Plano de Contingência Nacional para Dengue, Chikungunya e Zika (Ministério da Saúde, 2025)",
+      "url": "https://www.gov.br/saude/pt-br/centrais-de-conteudo/publicacoes/guias-e-manuais/2025/plano-de-contingencia-nacional-para-dengue-chikungunya-e-zika.pdf"
+    }
+  ],
   "niveis": [
     {
       "nivel": 1,
-      "cor": "verde",
-      "titulo": "Verde — Baixo risco",
-      "resumo": "REVISAR: Condições climáticas pouco favoráveis ou baixa circulação viral registrada na semana epidemiológica.",
-      "eliminar_agua_parada": [
-        "REVISAR: Verificar e esvaziar semanalmente recipientes que acumulam água (pratos de plantas, calhas, ralos e garrafas).",
-        "REVISAR: Manter caixas d'água, tonéis e lixeiras bem tampados."
-      ],
-      "sinais_alarme": [
-        "REVISAR: Mesmo em nível verde, febre alta de início súbito associada a dor de cabeça, dor atrás dos olhos ou manchas no corpo merece avaliação em serviço de saúde."
-      ],
-      "quando_procurar_ubs": "REVISAR: Procurar a Unidade Básica de Saúde (UBS) mais próxima se apresentar sintomas suspeitos para notificação e orientação adequada.",
-      "fonte_conferencia": "REVISAR: Conferir recomendações oficiais em gov.br/saude (Combate ao Aedes)."
+      "cor_nome": "Verde",
+      "titulo": "Verde - Baixo risco",
+      "resumo": "Condições climáticas (temperatura e umidade) desfavoráveis para o mosquito e baixa circulação dos vírus.",
+      "orientacoes": [
+        {
+          "titulo": "Vistoria semanal (10 minutos)",
+          "descricao": "Verificar e esvaziar pratos de vasos de plantas, garrafas, pneus, baldes e ralos pouco usados."
+        },
+        {
+          "titulo": "Manutenção estrutural",
+          "descricao": "Manter caixas d'água bem tampadas, limpar calhas entupidas e vedar cisternas ou poços."
+        },
+        {
+          "titulo": "Descarte correto",
+          "descricao": "Não jogar lixo ou entulho em terrenos baldios ou córregos."
+        }
+      ]
     },
     {
       "nivel": 2,
-      "cor": "amarelo",
-      "titulo": "Amarelo — Atenção",
-      "resumo": "REVISAR: Condições climáticas favoráveis à proliferação do mosquito Aedes aegypti combinadas com registro de circulação viral.",
-      "eliminar_agua_parada": [
-        "REVISAR: Realizar vistoria de 10 minutos por semana no quintal, área de serviço e escola para eliminar criadouros.",
-        "REVISAR: Lavar com escova e sabão os bebedouros de animais e recipientes que já tiveram água parada."
-      ],
-      "sinais_alarme": [
-        "REVISAR: Dor abdominal intensa e contínua, vômitos persistentes, tontura ao levantar ou sangramentos exigem atendimento imediato."
-      ],
-      "quando_procurar_ubs": "REVISAR: Em caso de febre e sintomas compatíveis, procurar a UBS para avaliação clínica e hidratação orientada; evitar automedicação.",
-      "fonte_conferencia": "REVISAR: Conferir protocolo oficial de atenção básica e manejo clínico do Ministério da Saúde."
+      "cor_nome": "Amarelo",
+      "titulo": "Amarelo - Atenção",
+      "resumo": "Clima favorável à proliferação do Aedes aegypti e registro de atividade viral (casos confirmados na região).",
+      "orientacoes": [
+        {
+          "titulo": "Proteção individual",
+          "descricao": "Iniciar o uso regular de repelentes (especialmente em gestantes, idosos e crianças) e instalar telas em janelas e portas."
+        },
+        {
+          "titulo": "Atenção a criadouros ocultos",
+          "descricao": "Verificar bandejas de ar-condicionado, atrás de geladeiras, vasos sanitários desativados e bromélias."
+        },
+        {
+          "titulo": "Apoio comunitário",
+          "descricao": "Permitir a entrada dos Agentes de Combate às Endemias (ACE) identificados e cobrar limpeza de áreas comuns ou terrenos vizinhos abandonados junto à prefeitura."
+        }
+      ]
     },
     {
       "nivel": 3,
-      "cor": "laranja",
-      "titulo": "Laranja — Risco de epidemia",
-      "resumo": "REVISAR: Transmissão sustentada com incidência crescente e acima do esperado para o período histórico no município.",
-      "eliminar_agua_parada": [
-        "REVISAR: Redobrar inspeções em imóveis, terrenos, escolas e espaços comunitários, acionando agentes de endemias quando houver focos em áreas públicas.",
-        "REVISAR: Descartar corretamente pneus, latas e resíduos que possam reter água da chuva."
-      ],
-      "sinais_alarme": [
-        "REVISAR: Dor abdominal forte, vômitos repetidos, queda de pressão, sangramento de nariz/gengiva ou sonolência/irritabilidade intensa são sinais de alarme."
-      ],
-      "quando_procurar_ubs": "REVISAR: Procurar a UBS logo no início dos sintomas e buscar atendimento de urgência (UPA ou SAMU 192) imediatamente diante de qualquer sinal de alarme.",
-      "fonte_conferencia": "REVISAR: Conferir sinais de alarme oficiais do Ministério da Saúde."
+      "cor_nome": "Laranja",
+      "titulo": "Laranja - Risco de epidemia",
+      "resumo": "Transmissão sustentada: aumento contínuo do número de casos por semanas seguidas (taxa de reprodução acima de 1), exigindo resposta rápida antes de atingir o pico epidêmico.",
+      "orientacoes": [
+        {
+          "titulo": "Uso contínuo de repelente",
+          "descricao": "Aplicar diariamente nas áreas expostas da pele, reaplicando conforme orientação do fabricante (e sempre por cima do protetor solar)."
+        },
+        {
+          "titulo": "Uso de roupas adequadas",
+          "descricao": "Priorizar roupas claras e que cubram braços e pernas em locais abertos ou horários de maior atividade do mosquito (início da manhã e fim da tarde)."
+        },
+        {
+          "titulo": "Monitoramento de sintomas",
+          "descricao": "Ficar atento a febre alta repentina, dor no corpo, dor atrás dos olhos, manchas vermelhas na pele ou dor forte nas articulações."
+        },
+        {
+          "titulo": "Hidratação imediata",
+          "descricao": "Ao surgirem os primeiros sintomas, começar a beber bastante líquido (água, soro caseiro, água de coco) imediatamente e procurar a Unidade Básica de Saúde (UBS) mais próxima."
+        }
+      ]
     },
     {
       "nivel": 4,
-      "cor": "vermelho",
-      "titulo": "Vermelho — Epidemia",
-      "resumo": "REVISAR: Alta incidência acima dos limiares epidêmicos históricos, exigindo mobilização comunitária e vigilância máxima.",
-      "eliminar_agua_parada": [
-        "REVISAR: Mobilizar moradores, escolas e lideranças locais para mutirões frequentes de eliminação de criadouros e facilitação do trabalho dos agentes de saúde.",
-        "REVISAR: Proteger janelas e berços/camas com telas ou mosquiteiros e usar repelente conforme orientação sanitária."
-      ],
-      "sinais_alarme": [
-        "REVISAR: Dor abdominal intensa, vômitos persistentes, acúmulo de líquidos, sangramento de mucosas, letargia ou queda brusca de plaquetas exigem urgência imediata."
-      ],
-      "quando_procurar_ubs": "REVISAR: Buscar a UBS ou ponto de hidratação municipal ao primeiro sinal de febre; em casos graves ou sinais de alarme, ir imediatamente à emergência ou ligar para o SAMU 192.",
-      "fonte_conferencia": "REVISAR: Conferir plano de contingência estadual/municipal e guia oficial do Ministério da Saúde."
+      "cor_nome": "Vermelho",
+      "titulo": "Vermelho - Epidemia",
+      "resumo": "Alta incidência: número de casos muito acima do padrão histórico esperado para a época do ano (situação de epidemia instalada).",
+      "orientacoes": [
+        {
+          "titulo": "Procurar polos de atendimento",
+          "descricao": "Em caso de sintomas, buscar diretamente os Polos de Hidratação ou tendas de atendimento exclusivas abertas pela prefeitura para desafogar as UPAs."
+        },
+        {
+          "titulo": "Não se automedicar",
+          "descricao": "Evitar rigorosamente anti-inflamatórios (como ibuprofeno, diclofenaco, nimesulida) e medicamentos com ácido acetilsalicílico (AAS/Aspirina), pois aumentam o risco de hemorragias graves na dengue."
+        },
+        {
+          "titulo": "Atenção aos sinais de alarme (Emergência)",
+          "descricao": "Se houver dor abdominal intensa e contínua, vômitos persistentes, tontura ao levantar, sangramento nas gengivas/nariz ou sonolência excessiva, ir imediatamente para uma UPA ou hospital."
+        }
+      ]
     }
   ]
 }

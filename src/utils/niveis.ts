@@ -118,13 +118,20 @@ export function formatarPercentualPtBr(valor: number | null | undefined): string
 
 export function formatarDataPtBr(valor: string | number | null | undefined): string {
   if (!valor) return 'Data indisponível';
-  if (typeof valor === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(valor)) {
-    const [ano, mes, dia] = valor.split('-');
-    return `${dia}/${mes}/${ano}`;
+  if (typeof valor === 'string') {
+    const matchDataPura = valor.match(/^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.000)?Z)?$/);
+    if (matchDataPura) {
+      const [, ano, mes, dia] = matchDataPura;
+      return `${dia}/${mes}/${ano}`;
+    }
   }
   const dt = new Date(valor);
   if (Number.isNaN(dt.getTime())) return String(valor);
-  return dt.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  // Épocas numéricas (data_ini_se) representam meia-noite UTC da semana epidemiológica;
+  // timestamps ISO de coleta usam o fuso local do navegador.
+  return typeof valor === 'number'
+    ? dt.toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+    : dt.toLocaleDateString('pt-BR');
 }
 
 export function rotuloTendencia(tendencia: Tendencia): {

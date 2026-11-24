@@ -60,13 +60,21 @@ export interface RespostaAlertaMunicipio {
   modoOffline: boolean;
 }
 
+export interface FonteOrientacao {
+  titulo: string;
+  url: string;
+}
+
+export interface OrientacaoItem {
+  titulo: string;
+  descricao: string;
+}
+
 export interface OrientacaoNivel {
   nivel: number;
-  cor: string;
+  cor_nome: string;
   titulo: string;
   resumo: string;
-  eliminar_agua_parada: string[];
-  sinais_alarme: string[];
-  quando_procurar_ubs: string;
-  fonte_conferencia: string;
+  orientacoes: OrientacaoItem[];
 }
+

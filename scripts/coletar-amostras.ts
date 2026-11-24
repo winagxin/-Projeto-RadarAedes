@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  Doenca,
+  type Doenca,
   getDb,
-  InfoDengueItemBruto,
+  type InfoDengueItemBruto,
   runMigrations,
   salvarConsultaEAlertas,
   upsertMunicipios,
