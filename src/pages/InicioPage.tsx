@@ -194,8 +194,7 @@ export function InicioPage({
           Consulte o semáforo de dengue, chikungunya e zika do seu município
         </h1>
         <p className="max-w-2xl text-base leading-relaxed text-slate-700">
-          Veja o nível de alerta do InfoDengue (verde, amarelo, laranja ou vermelho), a tendência das
-          últimas semanas e orientações práticas para moradores, escolas e agentes de saúde.
+          Veja o nível de alerta, a tendência das últimas semanas e o que fazer em cada nível.
         </p>
       </section>
 
@@ -227,7 +226,7 @@ export function InicioPage({
           {/* Seleção de UF */}
           <div className="sm:col-span-4">
             <label htmlFor={ufSelectId} className="block text-sm font-semibold text-slate-900">
-              Estado (UF)
+              UF - Estado
             </label>
             <select
               id={ufSelectId}

@@ -582,7 +582,7 @@ export function MapaUfPage({
         <div className="flex flex-wrap items-end gap-3">
           <div>
             <label htmlFor={ufSelectId} className="block text-xs font-semibold text-slate-700">
-              Estado (UF)
+              UF - Estado
             </label>
             <select
               id={ufSelectId}

@@ -168,6 +168,12 @@ Moradores, agentes de saúde e escolas precisam de um meio rápido, acessível e
 - URL dos tiles: `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` (renderizado via Leaflet)
 - Uso: camada visual de mapa de fundo geográfico para contextualizar os limites municipais do IBGE na tela Mapa da UF. Não fornece dados epidemiológicos nem recebe dados pessoais.
 
+### 6. Ministério da Saúde – Orientações de prevenção e atendimento
+
+- Diretrizes Nacionais para Prevenção e Controle de Epidemias de Dengue: https://www.gov.br/saude/pt-br/centrais-de-conteudo/publicacoes/svsa/dengue/diretrizes_nacionais_prevencao_controle_dengue.pdf
+- Plano de Contingência Nacional para Dengue, Chikungunya e Zika (2025): https://www.gov.br/saude/pt-br/centrais-de-conteudo/publicacoes/guias-e-manuais/2025/plano-de-contingencia-nacional-para-dengue-chikungunya-e-zika.pdf
+- Uso: base oficial para os textos revisados da tela "O que fazer" (armazenados em `content/orientacoes.json`).
+
 ## Esquema do banco de dados
 
 O banco local usa SQLite (`data/radar_aedes.db` via módulo nativo `node:sqlite`) com integridade referencial ativada (`PRAGMA foreign_keys = ON`) e coluna `is_teste` booleana (`0` por padrão) em todas as tabelas:
@@ -251,7 +257,6 @@ npm start
 - O InfoDengue não documenta um limite numérico de requisições. Por cautela, o app usa no máximo 4 chamadas simultâneas, timeout de 9 segundos e cache de 6 horas.
 - O plano B offline (`data/amostra_infodengue_rj.json`) cobre 6 municípios do RJ (Rio de Janeiro, Belford Roxo, Mesquita, Niterói, Duque de Caxias e Nova Iguaçu), dengue e chikungunya, coletados em 22/11/2026; zika sem registros em 2026 na fonte.
 - O "atualizado em" mostra a data da versão do modelo (`versao_modelo`), e não a data da coleta.
-- Os textos de orientação por nível são provisórios (marcados "REVISAR") até a conferência em fonte oficial.
 
 ## Requisitos para rodar
 
