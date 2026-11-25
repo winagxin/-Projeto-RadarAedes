@@ -1,22 +1,24 @@
+import 'dotenv/config';
 import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDb, runMigrations, seedFromLocalSamples } from './server/db.ts';
+import { getActiveDbKind, runMigrations, seedFromLocalSamples } from './server/db.ts';
 import { criarApiRouter } from './server/routes.ts';
 
-const PORT = Number(process.env.PORT || 3000);
+const portaEnv = Number(process.env.PORT);
+const PORT = Number.isInteger(portaEnv) && portaEnv > 0 ? portaEnv : 3000;
 const IS_PROD = process.env.NODE_ENV === 'production';
 
 async function iniciarServidor() {
-  // Inicializa o SQLite, garante o schema e carrega amostras locais se necessário
-  const db = getDb();
-  runMigrations(db);
-  seedFromLocalSamples(db);
+  // Inicializa o banco ativo (PostgreSQL se DATABASE_URL existir, senão SQLite),
+  // garante o schema das 4 tabelas e carrega amostras locais se necessário
+  await runMigrations();
+  await seedFromLocalSamples();
 
   const app = express();
   app.use(express.json());
 
-  // Rotas da API (o front-end lê exclusivamente do nosso servidor/SQLite)
+  // Rotas da API (o front-end lê exclusivamente do nosso servidor/banco)
   app.use('/api', criarApiRouter());
 
   if (IS_PROD) {
@@ -47,7 +49,7 @@ async function iniciarServidor() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`RadarAedes rodando em http://0.0.0.0:${PORT}`);
+    console.log(`RadarAedes rodando em http://0.0.0.0:${PORT} (banco: ${getActiveDbKind()})`);
   });
 }
 

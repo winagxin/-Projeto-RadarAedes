@@ -260,8 +260,29 @@ npm start
 
 ## Requisitos para rodar
 
-- Node.js 22.13 ou superior: o projeto usa o módulo nativo `node:sqlite`, exigindo Node.js 22.13 ou superior (confirmar na documentação do Node a versão em que o `node:sqlite` deixou de exigir flag).
-- Banco local e publicação: o desenvolvimento usa SQLite (`data/radar_aedes.db`) pela simplicidade de rodar localmente sem servidor de banco separado. Ao publicar em ambiente com contêineres (como o Cloud Run), o disco local é temporário e apagado a cada reinício ou nova versão; por isso, em produção será necessário migrar para um banco persistente externo, como o PostgreSQL. **Esse banco persistente para publicação ainda não foi implementado (pendente).**
+- **Node.js 22.18.0 ou superior** (`"engines": { "node": ">=22.18.0" }` no `package.json`): necessário para executar `npm start` (`node server.ts`) diretamente com suporte nativo a arquivos `.ts` sem flags e com o módulo `node:sqlite`. Confirmado e testado em **Node v22.23.5**.
+- **Banco de dados**: o desenvolvimento local usa SQLite (`data/radar_aedes.db`) por padrão; quando a variável `DATABASE_URL` está configurada, o sistema usa PostgreSQL (`pg`) automaticamente.
+
+## Publicação
+
+O projeto foi preparado para publicação gratuita usando **Render** (servidor Node/Express + front-end buildado) e **Neon** (PostgreSQL persistente), mantendo SQLite no desenvolvimento local e sem alterar telas ou regras de negócio.
+
+### O que mudou
+
+- **Camada de banco dual (`server/db.ts`)**: se `process.env.DATABASE_URL` estiver definida, usa PostgreSQL com a biblioteca `pg` (incluindo SSL para conexões remotas como o Neon); caso contrário, usa SQLite local como antes. As 4 tabelas (`municipios`, `consultas_alerta`, `alerta_semanal` e `cache_malhas_uf`), as consultas parametrizadas e o upsert de `alerta_semanal` (`ON CONFLICT (codigo_ibge, doenca, semana_epi) DO UPDATE`) se comportam de forma equivalente nos dois bancos.
+- **Porta configurável e inicialização (`server.ts`)**: o servidor carrega variáveis via `dotenv/config`, garante as tabelas e amostras iniciais ao subir e escuta `process.env.PORT` (com padrão `3000`).
+- **Scripts compatíveis com os dois bancos**: `scripts/migrate-seed.ts` e `scripts/coletar-amostras.ts` executam tanto no SQLite quanto no PostgreSQL e encerram o pool de conexões ao finalizar.
+- **Monitoramento e versão do Node**: `/api/health` informa o banco ativo (`sqlite` ou `postgresql`), `package.json` define `"engines": { "node": ">=22.18.0" }` e o comando `npm start` (`node server.ts`) foi testado e confirmado funcionando após `npm run build`.
+- **Variáveis sem segredos (`.env.example`)**: criado arquivo modelo apenas com as chaves vazias (`DATABASE_URL=`, `PORT=`, `SQLITE_PATH=`, `RADAR_FORCE_OFFLINE=`), mantendo credenciais fora do repositório.
+
+### Como publicar no Neon + Render (plano gratuito)
+
+1. **Banco no Neon**: crie um projeto gratuito no [Neon](https://neon.tech) e copie a string de conexão PostgreSQL (`DATABASE_URL`, normalmente já com `?sslmode=require`).
+2. **Web Service no Render**: crie um novo *Web Service* no [Render](https://render.com) ligado ao repositório com:
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npm start`
+3. **Variáveis de ambiente no Render**: adicione `NODE_ENV=production` e `DATABASE_URL=<sua string do Neon>` (a variável `PORT` é injetada automaticamente pelo Render).
+4. **Migração e conferência**: ao iniciar, `server.ts` já executa as migrações e a carga inicial de amostras; caso queira rodar manualmente apontando para o Neon, defina `DATABASE_URL` apenas no ambiente local (nunca no repositório) e execute `node scripts/migrate-seed.ts`. Após publicar, acesse `/api/health` e confirme `"banco": "postgresql"`.
 
 ## Privacidade e LGPD
 

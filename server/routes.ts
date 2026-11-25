@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Router } from 'express';
-import { buscarUltimosAlertasPorUf, type Doenca } from './db.ts';
+import { buscarUltimosAlertasPorUf, type Doenca, getActiveDbKind } from './db.ts';
 import {
   listarEstados,
   listarMunicipios,
@@ -29,7 +29,7 @@ export function criarApiRouter(): Router {
   const router = Router();
 
   router.get('/health', (_req, res) => {
-    res.json({ ok: true, servico: 'RadarAedes API', banco: 'sqlite' });
+    res.json({ ok: true, servico: 'RadarAedes API', banco: getActiveDbKind() });
   });
 
   router.get('/estados', async (_req, res) => {
@@ -94,14 +94,15 @@ export function criarApiRouter(): Router {
     const doenca = validarDoenca(req.query.doenca);
     try {
       const [listaMun, malha] = await Promise.all([listarMunicipios(uf), obterMalhaUf(uf)]);
-      const itens = buscarUltimosAlertasPorUf(uf, doenca);
+      const itens = await buscarUltimosAlertasPorUf(uf, doenca);
+      const nomeBanco = getActiveDbKind() === 'postgresql' ? 'PostgreSQL' : 'SQLite';
       res.json({
         uf,
         doenca,
         totalMunicipios: itens.length,
         geojson: malha.geojson,
         itens,
-        fonte: 'IBGE Malhas + InfoDengue (cache SQLite)',
+        fonte: `IBGE Malhas + InfoDengue (cache ${nomeBanco})`,
         atualizadoEm: malha.dataColeta,
         modoOffline: listaMun.modoOffline || malha.modoOffline,
       });
@@ -182,15 +183,18 @@ export function criarApiRouter(): Router {
     res.json(raw);
   });
 
-  router.get('/sobre', (_req, res) => {
-    const alertaRj = buscarUltimosAlertasPorUf('RJ', 'dengue').find(
-      (item) => item.versao_modelo !== null
-    );
-    res.json({
-      versaoModelo: alertaRj?.versao_modelo ?? '2026-11-17',
-      atualizadoEm: alertaRj?.versao_modelo ?? new Date().toISOString(),
-      fonte: 'InfoDengue e IBGE',
-    });
+  router.get('/sobre', async (_req, res) => {
+    try {
+      const alertasRj = await buscarUltimosAlertasPorUf('RJ', 'dengue');
+      const alertaRj = alertasRj.find((item) => item.versao_modelo !== null);
+      res.json({
+        versaoModelo: alertaRj?.versao_modelo ?? '2026-11-17',
+        atualizadoEm: alertaRj?.versao_modelo ?? new Date().toISOString(),
+        fonte: 'InfoDengue e IBGE',
+      });
+    } catch (err) {
+      res.status(500).json({ erro: (err as Error).message });
+    }
   });
 
   return router;

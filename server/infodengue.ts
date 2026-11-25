@@ -168,7 +168,7 @@ export async function listarEstados() {
 
 export async function listarMunicipios(ufInput: string) {
   const uf = ufInput.trim().toUpperCase();
-  const locais = buscarMunicipiosPorUf(uf);
+  const locais = await buscarMunicipiosPorUf(uf);
   const ultimaCargaCompleta = cacheUfsCompletasMem.get(uf);
 
   if (
@@ -195,12 +195,12 @@ export async function listarMunicipios(ufInput: string) {
       nome: m.nome,
       uf,
     }));
-    upsertMunicipios(formatados);
+    await upsertMunicipios(formatados);
     const agora = Date.now();
     cacheUfsCompletasMem.set(uf, agora);
     return {
       uf,
-      municipios: buscarMunicipiosPorUf(uf),
+      municipios: await buscarMunicipiosPorUf(uf),
       fonte: 'IBGE Localidades',
       atualizadoEm: new Date(agora).toISOString(),
       modoOffline: false,
@@ -218,10 +218,10 @@ export async function listarMunicipios(ufInput: string) {
           nome: m.nome,
           uf: 'RJ',
         }));
-        upsertMunicipios(formatados);
+        await upsertMunicipios(formatados);
         return {
           uf: 'RJ',
-          municipios: buscarMunicipiosPorUf('RJ'),
+          municipios: await buscarMunicipiosPorUf('RJ'),
           fonte: 'Amostra local',
           atualizadoEm: '2026-11-22',
           modoOffline: true,
@@ -232,7 +232,7 @@ export async function listarMunicipios(ufInput: string) {
       return {
         uf,
         municipios: locais,
-        fonte: 'Cache SQLite (modo offline)',
+        fonte: 'Cache do servidor (modo offline)',
         atualizadoEm: new Date().toISOString(),
         modoOffline: true,
       };
@@ -324,10 +324,12 @@ export function calcularTendencia(
   };
 }
 
-function montarRespostaAlerta(codigoIbge: string, doenca: Doenca, forcarOffline = false) {
-  const municipio = buscarMunicipio(codigoIbge);
-  const consulta = buscarUltimaConsulta(codigoIbge, doenca);
-  const serie = buscarSerieHistorica(codigoIbge, doenca, 12);
+async function montarRespostaAlerta(codigoIbge: string, doenca: Doenca, forcarOffline = false) {
+  const [municipio, consulta, serie] = await Promise.all([
+    buscarMunicipio(codigoIbge),
+    buscarUltimaConsulta(codigoIbge, doenca),
+    buscarSerieHistorica(codigoIbge, doenca, 12),
+  ]);
   const maisRecente = serie.length > 0 ? serie[serie.length - 1] : null;
   const tendenciaInfo = calcularTendencia(serie);
 
@@ -403,7 +405,7 @@ function carregarAmostraConsolidadaRj(
 
 export async function obterAlertaMunicipio(codigoIbge: string, doenca: Doenca) {
   const codigo = String(codigoIbge).trim();
-  const ultimaConsulta = buscarUltimaConsulta(codigo, doenca);
+  const ultimaConsulta = await buscarUltimaConsulta(codigo, doenca);
 
   // Cache de 6 horas somente se a última coleta foi online (não impede retry se só tinha amostra offline)
   if (
@@ -428,8 +430,8 @@ export async function obterAlertaMunicipio(codigoIbge: string, doenca: Doenca) {
     const itens = await fetchJsonComTimeout<InfoDengueItemBruto[]>(url);
     const lista = Array.isArray(itens) ? itens : [];
 
-    const municipioExistente = buscarMunicipio(codigo);
-    salvarConsultaEAlertas({
+    const municipioExistente = await buscarMunicipio(codigo);
+    await salvarConsultaEAlertas({
       codigo_ibge: codigo,
       nome_municipio: municipioExistente?.nome,
       uf: municipioExistente?.uf,
@@ -441,8 +443,8 @@ export async function obterAlertaMunicipio(codigoIbge: string, doenca: Doenca) {
 
     return montarRespostaAlerta(codigo, doenca, false);
   } catch {
-    // Plano B 1: Se já existe histórico salvo no SQLite para esse município/doença
-    const serieBanco = buscarSerieHistorica(codigo, doenca, 12);
+    // Plano B 1: Se já existe histórico salvo no banco para esse município/doença
+    const serieBanco = await buscarSerieHistorica(codigo, doenca, 12);
     if (serieBanco.length > 0) {
       return montarRespostaAlerta(codigo, doenca, true);
     }
@@ -450,7 +452,7 @@ export async function obterAlertaMunicipio(codigoIbge: string, doenca: Doenca) {
     // Plano B 2: Amostra consolidada data/amostra_infodengue_rj.json (ou legado data/amostra_infodengue.json)
     const amostra = carregarAmostraConsolidadaRj(codigo, doenca);
     if (amostra) {
-      salvarConsultaEAlertas({
+      await salvarConsultaEAlertas({
         codigo_ibge: codigo,
         nome_municipio: amostra.nome,
         uf: 'RJ',
@@ -469,7 +471,7 @@ export async function obterAlertaMunicipio(codigoIbge: string, doenca: Doenca) {
 
 export async function obterMalhaUf(ufInput: string) {
   const uf = ufInput.trim().toUpperCase();
-  const cached = buscarCacheMalhaUf(uf);
+  const cached = await buscarCacheMalhaUf(uf);
   if (cached && estaDentroDoTtl(cached.data_coleta, 24 * 60 * 60 * 1000)) {
     return {
       uf,
@@ -484,7 +486,7 @@ export async function obterMalhaUf(ufInput: string) {
       uf
     )}?formato=application/vnd.geo+json&qualidade=minima&intrarregiao=municipio`;
     const geojson = await fetchJsonComTimeout<Record<string, unknown>>(url);
-    salvarCacheMalhaUf(uf, JSON.stringify(geojson));
+    await salvarCacheMalhaUf(uf, JSON.stringify(geojson));
     return {
       uf,
       geojson,
@@ -565,7 +567,7 @@ export async function streamMapaUf(
 ): Promise<void> {
   const uf = ufInput.trim().toUpperCase();
   const [listaMun, malha] = await Promise.all([listarMunicipios(uf), obterMalhaUf(uf)]);
-  const snapshot = buscarUltimosAlertasPorUf(uf, doenca);
+  const snapshot = await buscarUltimosAlertasPorUf(uf, doenca);
 
   const janela = calcularJanelaEpidemiologica(4); // Janela enxuta de 4 semanas para mapa estadual
   const iniciais: ItemMapaMunicipio[] = [];
@@ -703,7 +705,7 @@ export async function streamMapaUf(
         const itens = await fetchJsonComTimeout<InfoDengueItemBruto[]>(url, signal);
         const lista = Array.isArray(itens) ? itens : [];
 
-        salvarConsultaEAlertas({
+        await salvarConsultaEAlertas({
           codigo_ibge: alvo.codigo_ibge,
           nome_municipio: alvo.nome,
           uf: alvo.uf,

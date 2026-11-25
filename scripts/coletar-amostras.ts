@@ -1,8 +1,11 @@
+import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
+  closeDb,
+  contarResumoBanco,
   type Doenca,
-  getDb,
+  getActiveDbKind,
   type InfoDengueItemBruto,
   runMigrations,
   salvarConsultaEAlertas,
@@ -94,15 +97,13 @@ async function main() {
     console.warn(`Total de divergências encontradas: ${divergencias}`);
   }
 
-  const db = getDb();
-  runMigrations(db);
-  upsertMunicipios(
+  await runMigrations();
+  await upsertMunicipios(
     ALVOS.map((a) => ({
       codigo_ibge: a.codigo_ibge,
       nome: mapaIbge.get(a.codigo_ibge) || a.nomeEsperado,
       uf: 'RJ',
     })),
-    db,
     false
   );
 
@@ -150,20 +151,17 @@ async function main() {
         const itens = await consultarInfoDengue(t.codigo_ibge, t.doenca);
         const dataColetaItem = new Date().toISOString();
 
-        salvarConsultaEAlertas(
-          {
-            codigo_ibge: t.codigo_ibge,
-            nome_municipio: t.nome,
-            uf: 'RJ',
-            doenca: t.doenca,
-            fonte: 'InfoDengue',
-            modo_offline: false,
-            data_coleta: dataColetaItem,
-            itens,
-            is_teste: false,
-          },
-          db
-        );
+        await salvarConsultaEAlertas({
+          codigo_ibge: t.codigo_ibge,
+          nome_municipio: t.nome,
+          uf: 'RJ',
+          doenca: t.doenca,
+          fonte: 'InfoDengue',
+          modo_offline: false,
+          data_coleta: dataColetaItem,
+          itens,
+          is_teste: false,
+        });
 
         consolidado.municipios[t.codigo_ibge].doencas[t.doenca] = itens;
         relatorio.push({
@@ -209,13 +207,16 @@ async function main() {
     vazias.map((v) => `${v.municipio} (${v.codigo_ibge}) - ${v.doenca}`).join(' | ') || 'Nenhuma'
   );
 
-  const totalBanco = db.prepare('SELECT COUNT(*) AS total FROM alerta_semanal').get() as {
-    total: number;
-  };
-  console.log('Total de linhas em alerta_semanal após coleta:', totalBanco.total);
+  const resumoBanco = await contarResumoBanco();
+  console.log(`Banco ativo: ${getActiveDbKind()}`);
+  console.log('Total de linhas em alerta_semanal após coleta:', resumoBanco.total_semanas);
 }
 
-main().catch((err) => {
-  console.error('Erro na coleta:', err);
-  process.exit(1);
-});
+main()
+  .catch((err) => {
+    console.error('Erro na coleta:', err);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await closeDb();
+  });
