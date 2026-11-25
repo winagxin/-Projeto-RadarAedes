@@ -308,6 +308,37 @@ Recursos implementados e verificados no código da aplicação:
 - **Prompt 2 (Banco de dados e backend)**: _Preencher com o prompt usado_
 - **Prompt 3 (Interface, acessibilidade, mapa e revisão)**: _Preencher com o prompt usado_
 
+### Prompts de inspeção e preparação para publicação (Render + Neon)
+
+#### Inspeção da escolha entre SQLite e PostgreSQL
+
+```text
+mostre no chat o trecho em que o código escolhe entre SQLite e PostgreSQL
+```
+
+#### Preparação do ambiente publicado (Render + Neon)
+
+```text
+Preparar o app publicado (Render + Neon) sem mudar telas nem regras de negócio:
+1) Se DATABASE_URL existir mas não começar com postgres:// ou postgresql://, pare a inicialização com uma mensagem clara em português. Nunca imprima a string de conexão, o usuário ou a senha em logs, respostas de API ou no chat. Ao conectar, registre apenas o tipo de banco e que a conexão funcionou.
+2) Ao iniciar, crie as tabelas com CREATE TABLE IF NOT EXISTS (PostgreSQL e SQLite), sem apagar dados existentes.
+3) A rota /api/health continua mostrando apenas ok, servico e banco.
+4) Crie .env.example com DATABASE_URL, SQLITE_PATH e RADAR_FORCE_OFFLINE, sem valores. Confirme que .env e data/radar_aedes.db estão no .gitignore e que nenhum segredo está no repositório.
+5) No README, troque a nota "banco persistente pendente" por "implementado" e acrescente a seção abaixo, exatamente como está, mantendo as demais seções:
+
+## Publicação
+- Link público: https://projeto-radaraedes.onrender.com
+- Hospedagem do site: Render (plano gratuito, serviço web Node).
+- Banco de dados publicado: PostgreSQL no Neon (plano gratuito). No computador, o app usa SQLite.
+- Configuração: a variável de ambiente DATABASE_URL guarda a conexão com o banco e fica apenas no Render, nunca no repositório.
+- Atualização dos dados: o servidor consulta o InfoDengue quando alguém abre uma tela e guarda o resultado por 6 horas.
+- Limitações: no plano gratuito, o site dorme após cerca de 15 minutos sem acesso, e a primeira abertura depois disso pode levar cerca de um minuto. Os limites dos planos gratuitos podem mudar.
+- Aviso conhecido: a biblioteca de conexão com o PostgreSQL exibe, no registro, um aviso sobre o modo SSL. Não afeta o funcionamento e deve ser tratado em uma atualização futura.
+- Testado em: 24/11/2026.
+
+Explique cada arquivo alterado em 2 linhas.
+```
+
 ### Prompts de redesenho visual e interações (3 etapas)
 
 #### Etapa 1 — Identidade visual, Início e rodapés
@@ -344,8 +375,36 @@ Mantenha todas as regras anteriores. ETAPA 3, faça e pare:
 Mostre o tamanho do build antes e depois. Explique cada arquivo em 2 linhas.
 ```
 
+### Prompts de diagnóstico de dados e documentação final
+
+#### Diagnóstico e correção da janela de semanas em cache (Mapa da UF × Painel do município)
+
+```text
+Por que só o RIo de Janeiro tem dados de de antes de duas semanas atrás?
+```
+
+*(Seguido da confirmação `"Quero"` para ajustar o cache do servidor e separar consultas resumidas do Mapa da UF da série completa de 16 semanas do painel municipal.)*
+
+#### Registro dos prompts, testes do Lighthouse e link público no README
+
+```text
+escreva aqueles 3 prompts dividos em 3 etapas em que eu pedi você para fazer alterações nas interações, no mapa, gráfico, o visual, a identidade, etc, no readme do projeto, mais especificamente na aba "Prompts usados"
+```
+
+```text
+registrar no readme tem testes realizados com lighthouse
+:
+- **Lighthouse (Chrome DevTools)**: 
+  - Página inicial, modo navegação, 3 execuções em 25/11/2026: acessibilidade 100, 100 e 100; desempenho 96, 97 e 90; boas práticas 100, 100 e 100.
+  - Painel do Rio de Janeiro (dengue), modo Snapshot, em 25/11/2026: 27 de 27 testes de acessibilidade aprovados e 4 de 4 de boas práticas. O modo Snapshot não mede desempenho.
+  - Apontamentos: nenhum.
+```
+
+```text
+preencha o readme com outros prompts que eu te enviei e adicione o link publico da aplicação: https://projeto-radaraedes.onrender.com/
+```
 
 ## Entregas
 
-- **Link público da aplicação**: _Preencher com a URL publicada_
+- **Link público da aplicação**: https://projeto-radaraedes.onrender.com/
 - **Link do vídeo de demonstração**: _Preencher com o link do vídeo_
