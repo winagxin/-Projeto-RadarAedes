@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { AlertaSemanalItem } from '../types';
 import {
   formatarDataPtBr,
@@ -102,7 +102,9 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
   const [indiceFoco, setIndiceFoco] = useState<number | null>(
     serie.length > 0 ? serie.length - 1 : null
   );
+  const [dicaVisivel, setDicaVisivel] = useState(false);
   const [mostrarTabela, setMostrarTabela] = useState(false);
+  const pontosRefs = useRef<Array<SVGGElement | null>>([]);
 
   if (serie.length === 0) {
     return null;
@@ -153,18 +155,39 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
   const tituloMetrica =
     metrica === 'casos_est' ? 'Casos estimados por semana' : 'Casos por 100 mil habitantes';
 
+  const larguraFaixa = serie.length > 1 ? plotW / (serie.length - 1) : plotW;
+  const nivelPonto = pontoSelecionado ? obterConfigNivel(pontoSelecionado.item.nivel) : null;
+  const proporcaoX = pontoSelecionado ? pontoSelecionado.x / width : 0.5;
+  const alinhamentoDica =
+    proporcaoX < 0.28
+      ? 'left-2'
+      : proporcaoX > 0.72
+      ? 'right-2'
+      : 'left-1/2 -translate-x-1/2';
+
+  function selecionarIndice(novoIdx: number, moverFoco = false) {
+    setIndiceFoco(novoIdx);
+    setDicaVisivel(true);
+    if (moverFoco) {
+      requestAnimationFrame(() => {
+        pontosRefs.current[novoIdx]?.focus();
+      });
+    }
+  }
+
   return (
     <section
       aria-labelledby="titulo-grafico-tendencia"
-      className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+      className="radar-cartao rounded-xl border border-[#E2DBD0] bg-white p-5 sm:p-6"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 id="titulo-grafico-tendencia" className="text-lg font-bold text-slate-900">
+          <h3 id="titulo-grafico-tendencia" className="text-lg font-bold text-[#0F2744]">
             Evolução das últimas {serie.length} semanas
           </h3>
           <p className="text-sm text-slate-600">
-            {tituloMetrica} em {nomeMunicipio}. Cada nível tem cor e forma própria nos pontos.
+            {tituloMetrica} em {nomeMunicipio}. Passe o mouse, toque ou use as setas para ler cada
+            semana.
           </p>
         </div>
 
@@ -172,16 +195,16 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
           <div
             role="group"
             aria-label="Selecionar métrica do gráfico"
-            className="flex flex-wrap gap-1 rounded-lg border border-slate-300 bg-slate-100 p-1"
+            className="flex flex-wrap gap-1 rounded-lg border border-[#D4CCC0] bg-[#F3EFE7] p-1"
           >
             <button
               type="button"
               onClick={() => setMetrica('casos_est')}
               aria-pressed={metrica === 'casos_est'}
-              className={`min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight transition-colors ${
+              className={`radar-interativo min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight ${
                 metrica === 'casos_est'
-                  ? 'bg-slate-900 text-white'
-                  : 'text-slate-700 hover:bg-slate-200'
+                  ? 'bg-[#0F2744] text-white'
+                  : 'text-slate-700 hover:bg-white'
               }`}
             >
               Casos estimados
@@ -190,10 +213,10 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
               type="button"
               onClick={() => setMetrica('incidencia_100k')}
               aria-pressed={metrica === 'incidencia_100k'}
-              className={`min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight transition-colors ${
+              className={`radar-interativo min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight ${
                 metrica === 'incidencia_100k'
-                  ? 'bg-slate-900 text-white'
-                  : 'text-slate-700 hover:bg-slate-200'
+                  ? 'bg-[#0F2744] text-white'
+                  : 'text-slate-700 hover:bg-white'
               }`}
             >
               Casos por 100 mil habitantes
@@ -204,7 +227,7 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
             type="button"
             onClick={() => setMostrarTabela((v) => !v)}
             aria-expanded={mostrarTabela}
-            className="min-h-[40px] rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-100"
+            className="radar-interativo min-h-[40px] rounded-lg border border-[#CFC7BA] bg-white px-3 py-1.5 text-xs font-semibold text-[#0F2744] hover:bg-[#FAF7F2]"
           >
             {mostrarTabela ? 'Ocultar tabela em texto' : 'Ver alternativa em tabela'}
           </button>
@@ -246,7 +269,7 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
       {pontoSelecionado && (
         <div
           aria-live="polite"
-          className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800"
+          className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-[#E2DBD0] bg-[#FAF7F2] px-4 py-2.5 text-sm text-[#17212B]"
         >
           <span className="font-semibold tabular-nums">
             {formatarSemanaEpi(pontoSelecionado.item.semana_epi, pontoSelecionado.item.data_ini_se)}
@@ -263,125 +286,195 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
           </span>
           <span aria-hidden="true" className="text-slate-400">·</span>
           <span>
-            {obterConfigNivel(pontoSelecionado.item.nivel)?.rotulo ??
-              `Nível ${pontoSelecionado.item.nivel}`}{' '}
-            ({formaPorNivel(pontoSelecionado.item.nivel)})
+            {nivelPonto?.rotulo ?? `Nível ${pontoSelecionado.item.nivel}`} (
+            {formaPorNivel(pontoSelecionado.item.nivel)})
           </span>
         </div>
       )}
 
-      {/* Gráfico SVG responsivo e acessível */}
-      <div className="mt-4 w-full overflow-x-auto">
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          role="img"
-          aria-labelledby="titulo-grafico-tendencia desc-grafico-tendencia"
-          className="h-auto min-w-[560px] w-full select-none"
-        >
-          <desc id="desc-grafico-tendencia">
-            Gráfico de linha mostrando {tituloMetrica.toLowerCase()} ao longo de {serie.length}{' '}
-            semanas epidemiológicas em {nomeMunicipio}. Os pontos diferenciam os níveis por forma e
-            cor (círculo verde, quadrado amarelo, triângulo laranja, losango vermelho). A tabela
-            alternativa contém todos os valores e níveis em texto.
-          </desc>
+      {/* Gráfico SVG responsivo com linha-guia vertical e dica flutuante */}
+      <div
+        className="relative mt-4 w-full"
+        onMouseLeave={() => setDicaVisivel(false)}
+      >
+        {dicaVisivel && pontoSelecionado && (
+          <div
+            role="status"
+            aria-hidden="true"
+            className={`radar-entrada pointer-events-none absolute top-1 z-20 w-64 max-w-[calc(100%-1rem)] rounded-lg border border-[#1B4965] bg-[#0F2744] px-3 py-2 text-xs text-white shadow-lg ${alinhamentoDica}`}
+          >
+            <p className="font-semibold tabular-nums">
+              {formatarSemanaEpi(
+                pontoSelecionado.item.semana_epi,
+                pontoSelecionado.item.data_ini_se
+              )}
+            </p>
+            <p className="mt-1 tabular-nums text-stone-100">
+              {metrica === 'casos_est'
+                ? `${formatarNumeroPtBr(pontoSelecionado.item.casos_est, 1, 0)} casos estimados`
+                : `${formatarNumeroPtBr(
+                    pontoSelecionado.item.incidencia_100k,
+                    1,
+                    1
+                  )} casos por 100 mil hab.`}
+            </p>
+            <p className="mt-0.5 text-stone-200">
+              {nivelPonto?.rotulo ?? `Nível ${pontoSelecionado.item.nivel}`} (
+              {formaPorNivel(pontoSelecionado.item.nivel)})
+            </p>
+          </div>
+        )}
 
-          {/* Linhas de grade horizontais com rótulos exatamente alinhados */}
-          {ticksY.map((t, i) => (
-            <g key={i}>
-              <line
-                x1={padLeft}
-                y1={t.y}
-                x2={width - padRight}
-                y2={t.y}
-                stroke={i === 0 ? '#94a3b8' : '#e2e8f0'}
-                strokeWidth="1"
-              />
-              <text
-                x={padLeft - 10}
-                y={t.y + 4}
-                textAnchor="end"
-                className="fill-slate-700 text-[11px] tabular-nums"
-              >
-                {t.valor.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
-              </text>
-            </g>
-          ))}
+        <div className="w-full overflow-x-auto">
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            role="img"
+            aria-labelledby="titulo-grafico-tendencia desc-grafico-tendencia"
+            className="h-auto min-w-[560px] w-full select-none"
+          >
+            <desc id="desc-grafico-tendencia">
+              Gráfico de linha mostrando {tituloMetrica.toLowerCase()} ao longo de {serie.length}{' '}
+              semanas epidemiológicas em {nomeMunicipio}. Os pontos diferenciam os níveis por forma
+              e cor (círculo verde, quadrado amarelo, triângulo laranja, losango vermelho). A tabela
+              alternativa contém todos os valores e níveis em texto.
+            </desc>
 
-          {/* Área sob a curva */}
-          {areaPath && <path d={areaPath} fill="#1d4ed8" fillOpacity="0.08" />}
-
-          {/* Linha principal */}
-          {pontos.length > 1 && (
-            <path
-              d={pathLine}
-              fill="none"
-              stroke="#1d4ed8"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          )}
-
-          {/* Rótulos do eixo X e pontos interativos com forma por nível */}
-          {pontos.map((p) => {
-            const cfg = obterConfigNivel(p.item.nivel);
-            const isFocado = pontoSelecionado?.idx === p.idx;
-            const labelCurto = String(p.item.semana_epi).slice(4);
-            return (
-              <g key={p.item.semana_epi}>
+            {/* Linhas de grade horizontais com rótulos exatamente alinhados */}
+            {ticksY.map((t, i) => (
+              <g key={i}>
+                <line
+                  x1={padLeft}
+                  y1={t.y}
+                  x2={width - padRight}
+                  y2={t.y}
+                  stroke={i === 0 ? '#94a3b8' : '#e2dbd0'}
+                  strokeWidth="1"
+                />
                 <text
-                  x={p.x}
-                  y={height - 16}
-                  textAnchor="middle"
+                  x={padLeft - 10}
+                  y={t.y + 4}
+                  textAnchor="end"
                   className="fill-slate-700 text-[11px] tabular-nums"
                 >
-                  S{labelCurto}
+                  {t.valor.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
                 </text>
-                <g
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`${formatarSemanaEpi(p.item.semana_epi, p.item.data_ini_se)}: ${
-                    metrica === 'casos_est'
-                      ? `${formatarNumeroPtBr(p.val, 1, 0)} casos estimados`
-                      : `${formatarNumeroPtBr(p.val, 1, 1)} casos por 100 mil habitantes`
-                  }, ${cfg?.rotulo || `nível ${p.item.nivel}`} (${formaPorNivel(p.item.nivel)})`}
-                  onFocus={() => setIndiceFoco(p.idx)}
-                  onMouseEnter={() => setIndiceFoco(p.idx)}
-                  onClick={() => setIndiceFoco(p.idx)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'ArrowRight' && p.idx < pontos.length - 1) {
-                      e.preventDefault();
-                      setIndiceFoco(p.idx + 1);
-                    } else if (e.key === 'ArrowLeft' && p.idx > 0) {
-                      e.preventDefault();
-                      setIndiceFoco(p.idx - 1);
-                    }
-                  }}
-                  className="cursor-pointer outline-none"
-                >
-                  <PontoFormaSvg
-                    nivel={p.item.nivel}
-                    x={p.x}
-                    y={p.y}
-                    fill={cfg?.mapFillHex || '#1d4ed8'}
-                    focado={isFocado}
-                  />
-                </g>
               </g>
-            );
-          })}
-        </svg>
+            ))}
+
+            {/* Linha-guia vertical acompanhando a semana em foco */}
+            {pontoSelecionado && (
+              <line
+                x1={pontoSelecionado.x}
+                y1={padTop}
+                x2={pontoSelecionado.x}
+                y2={padTop + plotH}
+                stroke="#1B4965"
+                strokeWidth="1.5"
+                strokeDasharray="4 4"
+                opacity={dicaVisivel ? 0.85 : 0.4}
+              />
+            )}
+
+            {/* Área sob a curva */}
+            {areaPath && <path d={areaPath} fill="#1B4965" fillOpacity="0.08" />}
+
+            {/* Linha principal com animação curta de desenho no carregamento */}
+            {pontos.length > 1 && (
+              <path
+                key={`${metrica}-${serie[0]?.semana_epi ?? 0}-${serie.length}`}
+                pathLength={1}
+                d={pathLine}
+                fill="none"
+                stroke="#0F2744"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="radar-linha-grafico"
+              />
+            )}
+
+            {/* Áreas de toque amplas por semana + rótulos do eixo X + pontos interativos */}
+            {pontos.map((p) => {
+              const cfg = obterConfigNivel(p.item.nivel);
+              const isFocado = pontoSelecionado?.idx === p.idx;
+              const labelCurto = String(p.item.semana_epi).slice(4);
+              const hitX = Math.max(padLeft, p.x - larguraFaixa / 2);
+              const hitW = Math.min(width - padRight - hitX, larguraFaixa);
+
+              return (
+                <g key={p.item.semana_epi}>
+                  <rect
+                    x={hitX}
+                    y={padTop}
+                    width={Math.max(16, hitW)}
+                    height={plotH}
+                    fill="transparent"
+                    className="cursor-pointer"
+                    onMouseEnter={() => selecionarIndice(p.idx)}
+                    onClick={() => selecionarIndice(p.idx)}
+                  />
+                  <text
+                    x={p.x}
+                    y={height - 16}
+                    textAnchor="middle"
+                    className={`text-[11px] tabular-nums ${
+                      isFocado ? 'fill-[#0F2744] font-bold' : 'fill-slate-700'
+                    }`}
+                  >
+                    S{labelCurto}
+                  </text>
+                  <g
+                    ref={(el) => {
+                      pontosRefs.current[p.idx] = el;
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`${formatarSemanaEpi(p.item.semana_epi, p.item.data_ini_se)}: ${
+                      metrica === 'casos_est'
+                        ? `${formatarNumeroPtBr(p.val, 1, 0)} casos estimados`
+                        : `${formatarNumeroPtBr(p.val, 1, 1)} casos por 100 mil habitantes`
+                    }, ${cfg?.rotulo || `nível ${p.item.nivel}`} (${formaPorNivel(p.item.nivel)})`}
+                    onFocus={() => selecionarIndice(p.idx)}
+                    onBlur={() => setDicaVisivel(false)}
+                    onMouseEnter={() => selecionarIndice(p.idx)}
+                    onClick={() => selecionarIndice(p.idx)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowRight' && p.idx < pontos.length - 1) {
+                        e.preventDefault();
+                        selecionarIndice(p.idx + 1, true);
+                      } else if (e.key === 'ArrowLeft' && p.idx > 0) {
+                        e.preventDefault();
+                        selecionarIndice(p.idx - 1, true);
+                      } else if (e.key === 'Escape') {
+                        setDicaVisivel(false);
+                      }
+                    }}
+                    className="cursor-pointer outline-none"
+                  >
+                    <PontoFormaSvg
+                      nivel={p.item.nivel}
+                      x={p.x}
+                      y={p.y}
+                      fill={cfg?.mapFillHex || '#0F2744'}
+                      focado={isFocado}
+                    />
+                  </g>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
       </div>
 
       {/* Alternativa completa em texto/tabela */}
-      <div className={mostrarTabela ? 'mt-5 overflow-x-auto border-t border-slate-200 pt-4' : 'sr-only'}>
+      <div className={mostrarTabela ? 'mt-5 overflow-x-auto border-t border-[#E2DBD0] pt-4' : 'sr-only'}>
         <table className="w-full border-collapse text-left text-sm">
           <caption className="pb-2 text-left text-xs font-medium text-slate-600">
             Série histórica semanal de {nomeMunicipio} (últimas {serie.length} semanas) — nível em
             texto
           </caption>
           <thead>
-            <tr className="border-b border-slate-200 text-xs font-semibold text-slate-700">
+            <tr className="border-b border-[#E2DBD0] text-xs font-semibold text-slate-700">
               <th scope="col" className="py-2 pr-4">Semana</th>
               <th scope="col" className="py-2 pr-4">Início</th>
               <th scope="col" className="py-2 pr-4">Nível (texto)</th>
@@ -390,19 +483,19 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
               <th scope="col" className="py-2 text-right">Casos por 100 mil habitantes</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 tabular-nums">
+          <tbody className="divide-y divide-[#EFEAE1] tabular-nums">
             {serie.map((s) => {
               const cfg = obterConfigNivel(s.nivel);
               return (
-                <tr key={s.semana_epi} className="hover:bg-slate-50">
-                  <td className="py-2 pr-4 font-medium text-slate-900">
+                <tr key={s.semana_epi} className="hover:bg-[#FAF7F2]">
+                  <td className="py-2 pr-4 font-medium text-[#17212B]">
                     {formatarSemanaEpi(s.semana_epi, s.data_ini_se)}
                   </td>
                   <td className="py-2 pr-4 text-slate-700">{formatarDataPtBr(s.data_ini_se)}</td>
-                  <td className="py-2 pr-4 text-slate-900">
+                  <td className="py-2 pr-4 text-[#17212B]">
                     {cfg?.rotulo ?? `Nível ${s.nivel}`}
                   </td>
-                  <td className="py-2 pr-4 text-right font-medium text-slate-900">
+                  <td className="py-2 pr-4 text-right font-medium text-[#17212B]">
                     {formatarNumeroPtBr(s.casos_est, 1, 0)}
                   </td>
                   <td className="py-2 pr-4 text-right text-slate-700">

@@ -3,14 +3,17 @@ import L from 'leaflet';
 import {
   AlertCircle,
   AlertTriangle,
+  ChevronDown,
   HelpCircle,
   MapPin,
+  Maximize2,
   OctagonAlert,
   RefreshCw,
   ShieldCheck,
   WifiOff,
 } from 'lucide-react';
-import { Doenca, EstadoItem } from '../types';
+import { RodapeFonte } from '../components/RodapeFonte';
+import { AlertaSemanalItem, Doenca, EstadoItem, RespostaAlertaMunicipio } from '../types';
 import {
   formatarDataPtBr,
   formatarNumeroPtBr,
@@ -146,6 +149,69 @@ function montarHtmlDadosMunicipio(info: ItemMapa | undefined, codigoIbge: string
   `;
 }
 
+function montarHtmlMiniGrafico(serie: AlertaSemanalItem[] | undefined): string {
+  if (!serie || serie.length === 0) {
+    return '<p class="text-[11px] text-slate-600">Série recente indisponível para mini gráfico.</p>';
+  }
+
+  const ultimos = serie.slice(-12);
+  const valores = ultimos.map((s) => s.casos_est ?? 0);
+  const maxVal = Math.max(...valores, 1);
+
+  const w = 212;
+  const h = 58;
+  const padX = 8;
+  const padY = 8;
+  const plotW = w - padX * 2;
+  const plotH = h - padY * 2;
+
+  const pontos = ultimos.map((item, idx) => {
+    const val = item.casos_est ?? 0;
+    const x = ultimos.length === 1 ? padX + plotW / 2 : padX + (idx / (ultimos.length - 1)) * plotW;
+    const y = padY + plotH - (val / maxVal) * plotH;
+    return { x, y, val, item };
+  });
+
+  const lineD = pontos
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+    .join(' ');
+  const areaD =
+    pontos.length > 1
+      ? `${lineD} L ${pontos[pontos.length - 1].x.toFixed(1)} ${(padY + plotH).toFixed(1)} L ${pontos[0].x.toFixed(1)} ${(padY + plotH).toFixed(1)} Z`
+      : '';
+
+  const circulos = pontos
+    .map((p) => {
+      const cfg = obterConfigNivel(p.item.nivel);
+      const fill = cfg?.mapFillHex ?? '#0F2744';
+      return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.6" fill="${fill}" stroke="#ffffff" stroke-width="0.9" />`;
+    })
+    .join('');
+
+  const primeiro = ultimos[0];
+  const ultimo = ultimos[ultimos.length - 1];
+  const sIni = String(primeiro.semana_epi).slice(4);
+  const sFim = String(ultimo.semana_epi).slice(4);
+  const vIni = formatarNumeroPtBr(primeiro.casos_est, 1, 0);
+  const vFim = formatarNumeroPtBr(ultimo.casos_est, 1, 0);
+
+  return `
+    <div class="space-y-1">
+      <p class="text-[11px] font-semibold text-[#0F2744]">Últimas ${ultimos.length} semanas (casos est.)</p>
+      <svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Mini gráfico das últimas ${ultimos.length} semanas: de ${escapeHtml(vIni)} para ${escapeHtml(vFim)} casos estimados." class="h-14 w-full overflow-visible rounded bg-[#FAF7F2]">
+        <line x1="${padX}" y1="${padY + plotH}" x2="${w - padX}" y2="${padY + plotH}" stroke="#E2DBD0" stroke-width="1" />
+        ${areaD ? `<path d="${areaD}" fill="#1B4965" fill-opacity="0.12" />` : ''}
+        ${pontos.length > 1 ? `<path d="${lineD}" fill="none" stroke="#0F2744" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />` : ''}
+        ${circulos}
+      </svg>
+      <p class="flex items-center justify-between text-[11px] text-slate-600 tabular-nums">
+        <span>S${escapeHtml(sIni)}: ${escapeHtml(vIni)}</span>
+        <span>S${escapeHtml(sFim)}: ${escapeHtml(vFim)}</span>
+      </p>
+    </div>
+  `;
+}
+
 export function MapaUfPage({
   ufInicial,
   doencaInicial,
@@ -164,11 +230,14 @@ export function MapaUfPage({
   const [filtroTexto, setFiltroTexto] = useState('');
   const [filtroNivel, setFiltroNivel] = useState<string>('todos');
   const [municipioSelecionadoMapa, setMunicipioSelecionadoMapa] = useState<string | null>(null);
+  const [municipioDestacado, setMunicipioDestacado] = useState<string | null>(null);
+  const [detalhesCargaAbertos, setDetalhesCargaAbertos] = useState(false);
   const [zoomAtual, setZoomAtual] = useState<number>(7);
   const [tentativa, setTentativa] = useState(0);
 
   const ufSelectId = useId();
   const filtroId = useId();
+  const detalhesCargaId = useId();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<L.Map | null>(null);
   const geoLayerRef = useRef<L.GeoJSON | null>(null);
@@ -177,6 +246,7 @@ export function MapaUfPage({
   const itensRef = useRef<Record<string, ItemMapa>>({});
   const selecionadoRef = useRef<string | null>(null);
   const hoveredRef = useRef<string | null>(null);
+  const seriesPopupRef = useRef<Record<string, AlertaSemanalItem[]>>({});
   const onAbrirPainelRef = useRef(onAbrirPainelMunicipio);
   const doencaRef = useRef(doencaInicial);
 
@@ -201,13 +271,13 @@ export function MapaUfPage({
     const isHover = hoveredRef.current === codigoIbge;
     const isSelecionado = selecionadoRef.current === codigoIbge;
     const borderWeight = isSelecionado ? 4 : isHover ? 3.5 : 1;
-    const borderColor = isSelecionado ? '#1d4ed8' : '#0f172a';
+    const borderColor = isSelecionado ? '#0F2744' : isHover ? '#0F2744' : '#0f172a';
 
     if (!info || !cfg) {
       return {
         fillColor: '#cbd5e1',
-        fillOpacity: isHover ? 0.92 : 0.82,
-        color: isSelecionado ? '#1d4ed8' : isHover ? '#0f172a' : '#475569',
+        fillOpacity: isHover ? 0.94 : 0.82,
+        color: isSelecionado || isHover ? '#0F2744' : '#475569',
         weight: borderWeight,
         dashArray: isSelecionado || isHover ? undefined : '3 3',
       };
@@ -215,7 +285,7 @@ export function MapaUfPage({
 
     return {
       fillColor: cfg.mapFillHex,
-      fillOpacity: isHover || isSelecionado ? 0.86 : 0.72,
+      fillOpacity: isHover || isSelecionado ? 0.9 : 0.72,
       color: borderColor,
       weight: borderWeight,
       dashArray: undefined,
@@ -262,17 +332,98 @@ export function MapaUfPage({
     }
   }
 
+  function atualizarEstilosSomente() {
+    if (!geoLayerRef.current) return;
+
+    geoLayerRef.current.eachLayer((rawLayer) => {
+      const featureLayer = rawLayer as LayerMunicipio;
+      const codarea = String(featureLayer.feature?.properties?.codarea || '');
+      const info = itensRef.current[codarea];
+
+      if (typeof featureLayer.setStyle === 'function') {
+        featureLayer.setStyle(estiloFeature(codarea));
+      }
+      aplicarHachuraSeSemInfo(featureLayer, info);
+    });
+
+    if (selecionadoRef.current && layersByCodeRef.current[selecionadoRef.current]) {
+      layersByCodeRef.current[selecionadoRef.current].bringToFront();
+    }
+    if (hoveredRef.current && layersByCodeRef.current[hoveredRef.current]) {
+      layersByCodeRef.current[hoveredRef.current].bringToFront();
+    }
+  }
+
+  function destacarMunicipioNoMapa(codigoIbge: string | null) {
+    hoveredRef.current = codigoIbge;
+    setMunicipioDestacado(codigoIbge);
+    atualizarEstilosSomente();
+  }
+
+  function preencherSlotMiniGrafico(container: HTMLElement, serie: AlertaSemanalItem[] | undefined) {
+    const slot = container.querySelector('[data-mini-grafico-slot="true"]');
+    if (!slot) return;
+    slot.innerHTML = montarHtmlMiniGrafico(serie);
+  }
+
+  function carregarMiniGraficoPopup(codarea: string, featureLayer: LayerMunicipio) {
+    const info = itensRef.current[codarea];
+    if (!info || info.nivel === null) return;
+
+    const doencaAtual = doencaRef.current;
+    const chave = `${codarea}:${doencaAtual}`;
+    const popupEl = featureLayer.getPopup()?.getElement();
+    const cached = seriesPopupRef.current[chave];
+
+    if (cached) {
+      if (popupEl) {
+        preencherSlotMiniGrafico(popupEl, cached);
+        featureLayer.getPopup()?.update();
+      }
+      return;
+    }
+
+    fetch(`/api/alerta?geocode=${encodeURIComponent(codarea)}&doenca=${encodeURIComponent(doencaAtual)}`)
+      .then((r) => (r.ok ? (r.json() as Promise<RespostaAlertaMunicipio>) : null))
+      .then((dados) => {
+        if (!dados) return;
+        seriesPopupRef.current[chave] = dados.serie || [];
+        const popupAtual = featureLayer.getPopup();
+        const elAtual = popupAtual?.getElement();
+        if (elAtual && doencaRef.current === doencaAtual) {
+          preencherSlotMiniGrafico(elAtual, dados.serie || []);
+          popupAtual?.update();
+        }
+      })
+      .catch(() => {});
+  }
+
   function criarConteudoPopup(info: ItemMapa | undefined, codarea: string): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'min-w-[200px] space-y-2';
+    container.className = 'min-w-[220px] space-y-2';
     container.innerHTML = montarHtmlDadosMunicipio(info, codarea);
+
+    if (info && info.nivel !== null) {
+      const slot = document.createElement('div');
+      slot.setAttribute('data-mini-grafico-slot', 'true');
+      slot.className = 'mt-2 border-t border-[#E2DBD0] pt-2';
+      const chave = `${codarea}:${doencaRef.current}`;
+      const cached = seriesPopupRef.current[chave];
+      if (cached) {
+        slot.innerHTML = montarHtmlMiniGrafico(cached);
+      } else {
+        slot.innerHTML =
+          '<span class="sr-only">Carregando histórico recente...</span><div class="h-14 w-full rounded bg-[#EAE4DA]" aria-hidden="true"></div>';
+      }
+      container.appendChild(slot);
+    }
 
     if (info) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.textContent = 'Ver painel do município';
       btn.className =
-        'mt-2 inline-flex min-h-[38px] w-full items-center justify-center rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800';
+        'radar-interativo mt-2 inline-flex min-h-[38px] w-full items-center justify-center rounded-md bg-[#0F2744] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#16365C]';
       btn.onclick = () => {
         onAbrirPainelRef.current(info.codigo_ibge, info.nome, info.uf, doencaRef.current);
       };
@@ -317,7 +468,33 @@ export function MapaUfPage({
     if (selecionadoRef.current && layersByCodeRef.current[selecionadoRef.current]) {
       layersByCodeRef.current[selecionadoRef.current].bringToFront();
     }
+    if (hoveredRef.current && layersByCodeRef.current[hoveredRef.current]) {
+      layersByCodeRef.current[hoveredRef.current].bringToFront();
+    }
     atualizarRotulosCriticos();
+  }
+
+  function prefereMovimentoReduzido(): boolean {
+    return (
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
+  }
+
+  function enquadrarEstadoNoMapa() {
+    const map = leafletMapRef.current;
+    const camada = geoLayerRef.current;
+    if (!map || !camada) return;
+    const bounds = camada.getBounds();
+    if (!bounds.isValid()) return;
+    map.invalidateSize();
+    const reduzido = prefereMovimentoReduzido();
+    map.fitBounds(bounds, {
+      padding: [20, 20],
+      animate: !reduzido,
+      duration: reduzido ? 0 : 0.3,
+    });
   }
 
   function selecionarMunicipioNoMapa(codigoIbge: string) {
@@ -328,15 +505,24 @@ export function MapaUfPage({
     const layer = layersByCodeRef.current[codigoIbge];
     const map = leafletMapRef.current;
     if (layer && map) {
+      const reduzido = prefereMovimentoReduzido();
       layer.bringToFront();
       if (typeof layer.getBounds === 'function') {
         const bounds = layer.getBounds();
         if (bounds.isValid()) {
-          map.fitBounds(bounds, { maxZoom: 10, padding: [48, 48] });
+          map.flyToBounds(bounds, {
+            maxZoom: 10,
+            padding: [48, 48],
+            duration: reduzido ? 0 : 0.35,
+          });
         }
       }
       layer.openPopup();
-      mapContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      carregarMiniGraficoPopup(codigoIbge, layer);
+      mapContainerRef.current?.scrollIntoView({
+        behavior: reduzido ? 'auto' : 'smooth',
+        block: 'center',
+      });
     }
   }
 
@@ -431,26 +617,21 @@ export function MapaUfPage({
 
             featureLayer.on({
               mouseover: () => {
-                hoveredRef.current = codarea;
-                featureLayer.setStyle(estiloFeature(codarea));
-                aplicarHachuraSeSemInfo(featureLayer, itensRef.current[codarea]);
-                featureLayer.bringToFront();
+                destacarMunicipioNoMapa(codarea);
               },
               mouseout: () => {
                 if (hoveredRef.current === codarea) {
-                  hoveredRef.current = null;
-                }
-                featureLayer.setStyle(estiloFeature(codarea));
-                aplicarHachuraSeSemInfo(featureLayer, itensRef.current[codarea]);
-                if (selecionadoRef.current && layersByCodeRef.current[selecionadoRef.current]) {
-                  layersByCodeRef.current[selecionadoRef.current].bringToFront();
+                  destacarMunicipioNoMapa(null);
                 }
               },
               click: () => {
                 featureLayer.closeTooltip();
                 selecionadoRef.current = codarea;
                 setMunicipioSelecionadoMapa(codarea);
-                atualizarEstilosCamada();
+                atualizarEstilosSomente();
+              },
+              popupopen: () => {
+                carregarMiniGraficoPopup(codarea, featureLayer);
               },
             });
           },
@@ -459,7 +640,8 @@ export function MapaUfPage({
         geoLayerRef.current = camada;
         const bounds = camada.getBounds();
         if (bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [16, 16] });
+          map.invalidateSize();
+          map.fitBounds(bounds, { padding: [20, 20], animate: false });
           setZoomAtual(map.getZoom());
         }
         atualizarEstilosCamada();
@@ -567,6 +749,13 @@ export function MapaUfPage({
   const percentualProgresso =
     totalMunicipios > 0 ? Math.round((concluidos / totalMunicipios) * 100) : 0;
 
+  const itensValores = Object.values(itensMapa);
+  const modeloMapa = itensValores.find((i) => i.versao_modelo)?.versao_modelo ?? null;
+  const consultaMapa =
+    resumo?.atualizadoEm ||
+    itensValores.find((i) => i.data_coleta)?.data_coleta ||
+    new Date().toISOString();
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -615,7 +804,7 @@ export function MapaUfPage({
                   type="button"
                   aria-pressed={ativo}
                   onClick={() => onChangeDoenca(d)}
-                  className={`min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight transition-colors ${
+                  className={`radar-interativo min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight ${
                     ativo ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-200'
                   }`}
                 >
@@ -630,15 +819,21 @@ export function MapaUfPage({
       {/* Progresso progressivo do stream */}
       {carregandoStream && (
         <div
+          role="status"
           aria-live="polite"
           className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800"
         >
           <div className="flex items-center justify-between gap-4">
-            <span className="font-medium">
-              {carregandoInicial
-                ? `Carregando malha territorial de ${ufInicial}...`
-                : `Colorindo municípios progressivamente: ${concluidos} de ${totalMunicipios} (${percentualProgresso}%)`}
-            </span>
+            {carregandoInicial ? (
+              <div className="flex items-center gap-3">
+                <span className="sr-only">Carregando malha territorial de {ufInicial}...</span>
+                <span aria-hidden="true" className="h-4 w-56 max-w-full rounded bg-[#E2DBD0]" />
+              </div>
+            ) : (
+              <span className="font-medium">
+                {`Colorindo municípios progressivamente: ${concluidos} de ${totalMunicipios} (${percentualProgresso}%)`}
+              </span>
+            )}
             <span className="font-mono-tabular text-xs text-slate-600">
               Máx. 4 consultas simultâneas
             </span>
@@ -668,7 +863,7 @@ export function MapaUfPage({
           <button
             type="button"
             onClick={() => setTentativa((t) => t + 1)}
-            className="mt-3 inline-flex min-h-[42px] items-center gap-2 rounded-lg bg-red-700 px-4 py-2 text-xs font-semibold text-white hover:bg-red-800"
+            className="radar-interativo mt-3 inline-flex min-h-[42px] items-center gap-2 rounded-lg bg-red-700 px-4 py-2 text-xs font-semibold text-white hover:bg-red-800"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Tentar novamente
@@ -679,16 +874,27 @@ export function MapaUfPage({
       {/* Resumo acima do mapa: contagem de municípios por nível (texto + ícone + número) */}
       <section
         aria-label="Resumo dos municípios por nível de alerta"
-        className="rounded-xl border border-slate-200 bg-white p-4"
+        className="radar-cartao rounded-xl border border-slate-200 bg-white p-4"
       >
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-bold text-slate-900">
-            Resumo de {ufInicial} ({totalMunicipios} municípios)
-          </h2>
-          <p className="text-xs text-slate-600">
-            Passe o ponteiro ou toque em um município para ver os detalhes. Nomes no mapa apenas para
-            níveis 3 e 4 ao aproximar (zoom {zoomAtual}/{ZOOM_MINIMO_ROTULOS}+).
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">
+              Resumo de {ufInicial} ({totalMunicipios} municípios)
+            </h2>
+            <p className="text-xs text-slate-600">
+              Passe o ponteiro ou toque em um município para ver os detalhes. Nomes no mapa apenas
+              para níveis 3 e 4 ao aproximar (zoom {zoomAtual}/{ZOOM_MINIMO_ROTULOS}+).
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={enquadrarEstadoNoMapa}
+            disabled={carregandoInicial}
+            className="radar-interativo inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-[#CFC7BA] bg-[#FAF7F2] px-3 py-1 text-xs font-semibold text-[#0F2744] hover:border-[#0F2744] hover:bg-white disabled:opacity-50"
+          >
+            <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
+            Enquadrar {ufInicial}
+          </button>
         </div>
 
         <ul className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
@@ -762,26 +968,64 @@ export function MapaUfPage({
       </section>
 
       {/* Mapa Leaflet */}
-      <div className="relative z-0 isolate overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="radar-cartao relative z-0 isolate overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div
           ref={mapContainerRef}
           aria-label={`Mapa interativo dos municípios de ${ufInicial}. Use a tabela alternativa logo abaixo para navegação completa por teclado.`}
           className="h-[420px] w-full sm:h-[480px]"
         />
+        {carregandoInicial && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between bg-[#FAF7F2]/95 p-6"
+          >
+            <div className="h-5 w-48 rounded bg-[#E2DBD0]" />
+            <div className="mx-auto h-48 w-3/4 rounded-2xl bg-[#EAE4DA]" />
+            <div className="h-4 w-64 rounded bg-[#E2DBD0]" />
+          </div>
+        )}
       </div>
 
       {resumo && (
-        <p className="text-xs text-slate-700 tabular-nums">
-          Resumo da carga: {resumo.total} municípios · {resumo.emCache} do cache ·{' '}
-          {resumo.atualizadosApi} atualizados da API · {resumo.semDados} sem séries no período ·{' '}
-          {resumo.falhas} indisponíveis.
-        </p>
+        <div className="rounded-xl border border-[#E2DBD0] bg-white px-4 py-3 text-xs text-slate-700">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-medium text-[#17212B] tabular-nums">
+              {resumo.total}{' '}
+              {resumo.total === 1 ? 'município carregado' : 'municípios carregados'}. Dados
+              consultados em {formatarDataPtBr(resumo.atualizadoEm)}.
+            </p>
+            <button
+              type="button"
+              aria-expanded={detalhesCargaAbertos}
+              aria-controls={detalhesCargaId}
+              onClick={() => setDetalhesCargaAbertos((v) => !v)}
+              className="radar-interativo inline-flex min-h-[34px] items-center gap-1 rounded-md border border-[#CFC7BA] bg-[#FAF7F2] px-2.5 py-1 text-xs font-semibold text-[#0F2744] hover:border-[#0F2744] hover:bg-white"
+            >
+              <span>Detalhes técnicos</span>
+              <ChevronDown
+                className={`radar-transicao h-3.5 w-3.5 ${
+                  detalhesCargaAbertos ? 'rotate-180' : ''
+                }`}
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+          {detalhesCargaAbertos && (
+            <p
+              id={detalhesCargaId}
+              className="radar-entrada mt-2 border-t border-[#EAE4DA] pt-2 text-xs text-slate-600 tabular-nums"
+            >
+              {resumo.emCache} do cache do servidor · {resumo.atualizadosApi} atualizados da API ·{' '}
+              {resumo.semDados} sem séries no período · {resumo.falhas} indisponíveis.
+            </p>
+          )}
+        </div>
       )}
 
       {/* Alternativa completa em tabela acessível */}
       <section
         aria-labelledby="titulo-tabela-mapa"
-        className="rounded-xl border border-slate-200 bg-white p-5"
+        className="radar-cartao rounded-xl border border-slate-200 bg-white p-5"
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -850,10 +1094,32 @@ export function MapaUfPage({
                 listaTabela.map((item) => {
                   const cfg = obterConfigNivel(item.nivel);
                   const selecionado = municipioSelecionadoMapa === item.codigo_ibge;
+                  const destacado = municipioDestacado === item.codigo_ibge;
                   return (
                     <tr
                       key={item.codigo_ibge}
-                      className={selecionado ? 'bg-blue-50' : 'hover:bg-slate-50'}
+                      onMouseEnter={() => destacarMunicipioNoMapa(item.codigo_ibge)}
+                      onMouseLeave={() => {
+                        if (hoveredRef.current === item.codigo_ibge) {
+                          destacarMunicipioNoMapa(null);
+                        }
+                      }}
+                      onFocus={() => destacarMunicipioNoMapa(item.codigo_ibge)}
+                      onBlur={(ev) => {
+                        if (
+                          !ev.currentTarget.contains(ev.relatedTarget as Node) &&
+                          hoveredRef.current === item.codigo_ibge
+                        ) {
+                          destacarMunicipioNoMapa(null);
+                        }
+                      }}
+                      className={`radar-transicao ${
+                        selecionado
+                          ? 'bg-[#DCE6F2]'
+                          : destacado
+                          ? 'bg-[#EFEAE1]'
+                          : 'hover:bg-[#FAF7F2]'
+                      }`}
                     >
                       <td className="py-2.5 pr-4 font-medium text-slate-900">
                         <button
@@ -882,7 +1148,7 @@ export function MapaUfPage({
                             type="button"
                             aria-pressed={selecionado}
                             onClick={() => selecionarMunicipioNoMapa(item.codigo_ibge)}
-                            className={`inline-flex min-h-[36px] items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold ${
+                            className={`radar-interativo inline-flex min-h-[36px] items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold ${
                               selecionado
                                 ? 'border-blue-800 bg-blue-700 text-white'
                                 : 'border-slate-300 bg-white text-slate-900 hover:bg-slate-100'
@@ -901,7 +1167,7 @@ export function MapaUfPage({
                                 doencaInicial
                               )
                             }
-                            className="min-h-[36px] rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-100"
+                            className="radar-interativo min-h-[36px] rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-100"
                           >
                             Ver painel do município
                           </button>
@@ -916,10 +1182,7 @@ export function MapaUfPage({
         </div>
       </section>
 
-      <p className="border-t border-slate-200 pt-3 text-xs text-slate-600">
-        Fonte: IBGE Malhas + InfoDengue, atualizado em{' '}
-        {formatarDataPtBr(resumo?.atualizadoEm || new Date().toISOString())}
-      </p>
+      <RodapeFonte modeloData={modeloMapa} consultaData={consultaMapa} />
     </div>
   );
 }

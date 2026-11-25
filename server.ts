@@ -54,6 +54,7 @@ async function iniciarServidor() {
 }
 
 iniciarServidor().catch((err) => {
-  console.error('Erro fatal ao iniciar servidor:', err);
+  const mensagem = err instanceof Error ? err.message : 'Falha desconhecida ao iniciar o servidor.';
+  console.error('Erro fatal ao iniciar servidor:', mensagem);
   process.exit(1);
 });

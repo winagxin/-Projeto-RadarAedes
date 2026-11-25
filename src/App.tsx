@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { RadarLogo } from './components/RadarLogo';
 import { ComparacaoPage } from './pages/ComparacaoPage';
 import { InicioPage } from './pages/InicioPage';
 import { MapaUfPage } from './pages/MapaUfPage';
@@ -81,28 +82,29 @@ export default function App() {
   const seguindoAtual = seguidos.some((s) => s.codigo_ibge === geocodeAtual);
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen flex-col bg-[#FAF7F2] text-[#17212B]">
       <a
         href="#conteudo-principal"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[1200] focus:rounded-lg focus:bg-blue-700 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[1200] focus:rounded-lg focus:bg-[#0F2744] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
       >
         Pular para o conteúdo principal
       </a>
 
-      <header className="sticky top-0 z-[1100] border-b border-slate-200 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-6 px-4 sm:px-6">
+      <header className="sticky top-0 z-[1100] border-b border-[#E2DBD0] bg-[#FAF7F2]/95 backdrop-blur-sm">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 px-4 sm:px-6">
           <a
             href="#inicio"
             onClick={(e) => {
               e.preventDefault();
               navegarPara('inicio');
             }}
-            className="text-lg font-bold tracking-tight text-slate-950 whitespace-nowrap shrink-0"
+            aria-label="RadarAedes — Ir para a página inicial"
+            className="radar-transicao rounded-md py-1 whitespace-nowrap shrink-0 hover:opacity-85"
           >
-            RadarAedes
+            <RadarLogo />
           </a>
 
-          <nav aria-label="Navegação principal" className="hidden lg:flex items-center gap-5">
+          <nav aria-label="Navegação principal" className="hidden lg:flex items-center gap-6">
             {linksNav.map((item) => {
               const ativo = rota === item.id;
               return (
@@ -111,10 +113,10 @@ export default function App() {
                   type="button"
                   onClick={() => navegarPara(item.id)}
                   aria-current={ativo ? 'page' : undefined}
-                  className={`min-h-[40px] border-b-2 px-1 text-sm font-medium whitespace-nowrap shrink-0 transition-colors ${
+                  className={`radar-interativo min-h-[42px] border-b-2 px-1 text-sm whitespace-nowrap shrink-0 ${
                     ativo
-                      ? 'border-blue-700 font-semibold text-blue-800'
-                      : 'border-transparent text-slate-700 hover:border-slate-300 hover:text-slate-950'
+                      ? 'border-[#0F2744] font-semibold text-[#0F2744]'
+                      : 'border-transparent font-medium text-slate-700 hover:border-[#B6C2CF] hover:text-[#0F2744]'
                   }`}
                 >
                   {item.label}
@@ -127,7 +129,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => navegarPara('painel')}
-              className="hidden sm:inline-flex min-h-[40px] items-center rounded-lg bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white whitespace-nowrap shrink-0 hover:bg-slate-800"
+              className="radar-interativo hidden sm:inline-flex min-h-[42px] items-center rounded-lg bg-[#0F2744] px-4 py-2 text-xs font-semibold text-white whitespace-nowrap shrink-0 hover:bg-[#16365C]"
             >
               Consultar painel
             </button>
@@ -137,7 +139,7 @@ export default function App() {
               aria-expanded={menuMobileAberto}
               aria-label={menuMobileAberto ? 'Fechar menu' : 'Abrir menu'}
               onClick={() => setMenuMobileAberto((v) => !v)}
-              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-slate-300 text-slate-800 lg:hidden"
+              className="radar-interativo inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-[#D4CCC0] bg-white text-[#0F2744] hover:bg-[#F3EFE7] lg:hidden"
             >
               {menuMobileAberto ? (
                 <X className="h-5 w-5" aria-hidden="true" />
@@ -151,7 +153,7 @@ export default function App() {
         {menuMobileAberto && (
           <nav
             aria-label="Menu móvel"
-            className="border-t border-slate-200 bg-white px-4 py-2 lg:hidden"
+            className="border-t border-[#E2DBD0] bg-white px-4 py-2 lg:hidden"
           >
             <ul className="flex flex-col gap-1">
               {linksNav.map((item) => {
@@ -162,10 +164,10 @@ export default function App() {
                       type="button"
                       onClick={() => navegarPara(item.id)}
                       aria-current={ativo ? 'page' : undefined}
-                      className={`flex min-h-[44px] w-full items-center rounded-lg px-3 text-left text-sm font-medium ${
+                      className={`radar-interativo flex min-h-[44px] w-full items-center rounded-lg px-3 text-left text-sm font-medium ${
                         ativo
-                          ? 'bg-blue-50 font-semibold text-blue-900'
-                          : 'text-slate-800 hover:bg-slate-100'
+                          ? 'bg-[#EAEFF5] font-semibold text-[#0F2744]'
+                          : 'text-slate-800 hover:bg-[#FAF7F2]'
                       }`}
                     >
                       {item.label}
@@ -182,85 +184,89 @@ export default function App() {
         id="conteudo-principal"
         ref={mainRef}
         tabIndex={-1}
-        className="flex-1 px-4 pt-6 pb-20 outline-none sm:px-6 sm:pt-8"
+        className="flex-1 px-4 pt-6 pb-20 outline-none sm:px-6 sm:pt-10"
       >
-        {rota === 'inicio' && (
-          <InicioPage
-            ufSelecionada={uf}
-            doencaSelecionada={doenca}
-            municipioAtual={municipio}
-            onChangeUf={(novaUf) => setUf(novaUf)}
-            onChangeDoenca={(novaDoenca) => setDoenca(novaDoenca)}
-            onSelecionarMunicipio={(mun, d) => {
-              setMunicipio(mun);
-              setUf(mun.uf || uf);
-              setDoenca(d);
-              navegarPara('painel');
-            }}
-          />
-        )}
+        <div key={rota} className="radar-fade-tela">
+          {rota === 'inicio' && (
+            <InicioPage
+              ufSelecionada={uf}
+              doencaSelecionada={doenca}
+              municipioAtual={municipio}
+              onChangeUf={(novaUf) => setUf(novaUf)}
+              onChangeDoenca={(novaDoenca) => setDoenca(novaDoenca)}
+              onSelecionarMunicipio={(mun, d) => {
+                setMunicipio(mun);
+                setUf(mun.uf || uf);
+                setDoenca(d);
+                navegarPara('painel');
+              }}
+              onAbrirMapa={() => navegarPara('mapa')}
+            />
+          )}
 
-        {rota === 'painel' && (
-          <PainelMunicipioPage
-            geocode={geocodeAtual}
-            doenca={doenca}
-            seguindo={seguindoAtual}
-            totalSeguidos={seguidos.length}
-            onAlternarSeguir={alternarSeguir}
-            onAbrirComparacao={() => navegarPara('comparar')}
-            onChangeDoenca={(d) => setDoenca(d)}
-            onVoltarInicio={() => navegarPara('inicio')}
-            onAbrirOrientacoes={(nivel) => {
-              setNivelOrientacao(nivel);
-              navegarPara('orientacoes');
-            }}
-            onAbrirMapa={() => navegarPara('mapa')}
-          />
-        )}
+          {rota === 'painel' && (
+            <PainelMunicipioPage
+              geocode={geocodeAtual}
+              doenca={doenca}
+              seguindo={seguindoAtual}
+              totalSeguidos={seguidos.length}
+              onAlternarSeguir={alternarSeguir}
+              onAbrirComparacao={() => navegarPara('comparar')}
+              onChangeDoenca={(d) => setDoenca(d)}
+              onVoltarInicio={() => navegarPara('inicio')}
+              onAbrirOrientacoes={(nivel) => {
+                setNivelOrientacao(nivel);
+                navegarPara('orientacoes');
+              }}
+              onAbrirMapa={() => navegarPara('mapa')}
+            />
+          )}
 
-        {rota === 'mapa' && (
-          <MapaUfPage
-            ufInicial={uf}
-            doencaInicial={doenca}
-            onChangeUf={(novaUf) => setUf(novaUf)}
-            onChangeDoenca={(novaDoenca) => setDoenca(novaDoenca)}
-            onAbrirPainelMunicipio={(codigo, nome, ufMun, d) => {
-              setMunicipio({ codigo_ibge: codigo, nome, uf: ufMun, populacao: null });
-              setUf(ufMun);
-              setDoenca(d);
-              navegarPara('painel');
-            }}
-          />
-        )}
+          {rota === 'mapa' && (
+            <MapaUfPage
+              ufInicial={uf}
+              doencaInicial={doenca}
+              onChangeUf={(novaUf) => setUf(novaUf)}
+              onChangeDoenca={(novaDoenca) => setDoenca(novaDoenca)}
+              onAbrirPainelMunicipio={(codigo, nome, ufMun, d) => {
+                setMunicipio({ codigo_ibge: codigo, nome, uf: ufMun, populacao: null });
+                setUf(ufMun);
+                setDoenca(d);
+                navegarPara('painel');
+              }}
+            />
+          )}
 
-        {rota === 'comparar' && (
-          <ComparacaoPage
-            seguidos={seguidos}
-            doenca={doenca}
-            onChangeDoenca={(d) => setDoenca(d)}
-            onAdicionarSeguido={adicionarSeguido}
-            onRemoverSeguido={removerSeguido}
-            onAbrirPainel={(mun) => {
-              setMunicipio({
-                codigo_ibge: mun.codigo_ibge,
-                nome: mun.nome,
-                uf: mun.uf,
-                populacao: null,
-              });
-              setUf(mun.uf);
-              navegarPara('painel');
-            }}
-          />
-        )}
+          {rota === 'comparar' && (
+            <ComparacaoPage
+              seguidos={seguidos}
+              doenca={doenca}
+              onChangeDoenca={(d) => setDoenca(d)}
+              onAdicionarSeguido={adicionarSeguido}
+              onRemoverSeguido={removerSeguido}
+              onAbrirPainel={(mun) => {
+                setMunicipio({
+                  codigo_ibge: mun.codigo_ibge,
+                  nome: mun.nome,
+                  uf: mun.uf,
+                  populacao: null,
+                });
+                setUf(mun.uf);
+                navegarPara('painel');
+              }}
+            />
+          )}
 
-        {rota === 'orientacoes' && <OrientacoesPage nivelInicial={nivelOrientacao} />}
+          {rota === 'orientacoes' && <OrientacoesPage nivelInicial={nivelOrientacao} />}
 
-        {rota === 'sobre' && <SobreDadosPage />}
+          {rota === 'sobre' && <SobreDadosPage />}
+        </div>
       </main>
 
       <footer
         role="contentinfo"
-        className="fixed right-0 bottom-0 left-0 z-[1100] border-t border-slate-800 bg-slate-950 px-4 py-2.5 text-center text-xs font-medium text-slate-100 sm:text-sm"
+        data-surface="dark"
+        className="fixed right-0 bottom-0 left-0 z-[1100] border-t border-[#16365C] bg-[#0F2744] px-4 py-2.5 text-center text-xs font-medium text-stone-100 sm:text-sm"
       >
         Informativo. Não substitui atendimento de saúde. Emergência: SAMU 192.
       </footer>

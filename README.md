@@ -261,28 +261,17 @@ npm start
 ## Requisitos para rodar
 
 - **Node.js 22.18.0 ou superior** (`"engines": { "node": ">=22.18.0" }` no `package.json`): necessário para executar `npm start` (`node server.ts`) diretamente com suporte nativo a arquivos `.ts` sem flags e com o módulo `node:sqlite`. Confirmado e testado em **Node v22.23.5**.
-- **Banco de dados**: o desenvolvimento local usa SQLite (`data/radar_aedes.db`) por padrão; quando a variável `DATABASE_URL` está configurada, o sistema usa PostgreSQL (`pg`) automaticamente.
+- **Banco persistente para publicação**: implementado (usa PostgreSQL via `DATABASE_URL` quando configurado, mantendo SQLite local no computador).
 
 ## Publicação
-
-O projeto foi preparado para publicação gratuita usando **Render** (servidor Node/Express + front-end buildado) e **Neon** (PostgreSQL persistente), mantendo SQLite no desenvolvimento local e sem alterar telas ou regras de negócio.
-
-### O que mudou
-
-- **Camada de banco dual (`server/db.ts`)**: se `process.env.DATABASE_URL` estiver definida, usa PostgreSQL com a biblioteca `pg` (incluindo SSL para conexões remotas como o Neon); caso contrário, usa SQLite local como antes. As 4 tabelas (`municipios`, `consultas_alerta`, `alerta_semanal` e `cache_malhas_uf`), as consultas parametrizadas e o upsert de `alerta_semanal` (`ON CONFLICT (codigo_ibge, doenca, semana_epi) DO UPDATE`) se comportam de forma equivalente nos dois bancos.
-- **Porta configurável e inicialização (`server.ts`)**: o servidor carrega variáveis via `dotenv/config`, garante as tabelas e amostras iniciais ao subir e escuta `process.env.PORT` (com padrão `3000`).
-- **Scripts compatíveis com os dois bancos**: `scripts/migrate-seed.ts` e `scripts/coletar-amostras.ts` executam tanto no SQLite quanto no PostgreSQL e encerram o pool de conexões ao finalizar.
-- **Monitoramento e versão do Node**: `/api/health` informa o banco ativo (`sqlite` ou `postgresql`), `package.json` define `"engines": { "node": ">=22.18.0" }` e o comando `npm start` (`node server.ts`) foi testado e confirmado funcionando após `npm run build`.
-- **Variáveis sem segredos (`.env.example`)**: criado arquivo modelo apenas com as chaves vazias (`DATABASE_URL=`, `PORT=`, `SQLITE_PATH=`, `RADAR_FORCE_OFFLINE=`), mantendo credenciais fora do repositório.
-
-### Como publicar no Neon + Render (plano gratuito)
-
-1. **Banco no Neon**: crie um projeto gratuito no [Neon](https://neon.tech) e copie a string de conexão PostgreSQL (`DATABASE_URL`, normalmente já com `?sslmode=require`).
-2. **Web Service no Render**: crie um novo *Web Service* no [Render](https://render.com) ligado ao repositório com:
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm start`
-3. **Variáveis de ambiente no Render**: adicione `NODE_ENV=production` e `DATABASE_URL=<sua string do Neon>` (a variável `PORT` é injetada automaticamente pelo Render).
-4. **Migração e conferência**: ao iniciar, `server.ts` já executa as migrações e a carga inicial de amostras; caso queira rodar manualmente apontando para o Neon, defina `DATABASE_URL` apenas no ambiente local (nunca no repositório) e execute `node scripts/migrate-seed.ts`. Após publicar, acesse `/api/health` e confirme `"banco": "postgresql"`.
+- Link público: https://projeto-radaraedes.onrender.com
+- Hospedagem do site: Render (plano gratuito, serviço web Node).
+- Banco de dados publicado: PostgreSQL no Neon (plano gratuito). No computador, o app usa SQLite.
+- Configuração: a variável de ambiente DATABASE_URL guarda a conexão com o banco e fica apenas no Render, nunca no repositório.
+- Atualização dos dados: o servidor consulta o InfoDengue quando alguém abre uma tela e guarda o resultado por 6 horas.
+- Limitações: no plano gratuito, o site dorme após cerca de 15 minutos sem acesso, e a primeira abertura depois disso pode levar cerca de um minuto. Os limites dos planos gratuitos podem mudar.
+- Aviso conhecido: a biblioteca de conexão com o PostgreSQL exibe, no registro, um aviso sobre o modo SSL. Não afeta o funcionamento e deve ser tratado em uma atualização futura.
+- Testado em: 24/11/2026.
 
 ## Privacidade e LGPD
 
@@ -305,7 +294,10 @@ Recursos implementados e verificados no código da aplicação:
 ### Testes realizados
 
 - **Leitor de tela (Narrador / NVDA)**: _Pendente — preencher com observações e resultado após teste da dupla_ (Data: _dd/mm/aaaa_)
-- **Lighthouse (Acessibilidade)**: _Pendente — preencher com a pontuação obtida e eventuais apontamentos_ (Data: _dd/mm/aaaa_)
+- **Lighthouse (Chrome DevTools)**: 
+  - Página inicial, modo navegação, 3 execuções em 25/11/2026: acessibilidade 100, 100 e 100; desempenho 96, 97 e 90; boas práticas 100, 100 e 100.
+  - Painel do Rio de Janeiro (dengue), modo Snapshot, em 25/11/2026: 27 de 27 testes de acessibilidade aprovados e 4 de 4 de boas práticas. O modo Snapshot não mede desempenho.
+  - Apontamentos: nenhum.
 - **Navegação completa por teclado (Tab / Shift+Tab / Setas / Enter / Esc)**: _Pendente — preencher após percurso completo nas 6 telas_ (Data: _dd/mm/aaaa_)
 
 ## Prompts usados
@@ -315,6 +307,43 @@ Recursos implementados e verificados no código da aplicação:
 - **Prompt 1 (Planejamento e teste de APIs)**: _Preencher com o prompt usado_
 - **Prompt 2 (Banco de dados e backend)**: _Preencher com o prompt usado_
 - **Prompt 3 (Interface, acessibilidade, mapa e revisão)**: _Preencher com o prompt usado_
+
+### Prompts de redesenho visual e interações (3 etapas)
+
+#### Etapa 1 — Identidade visual, Início e rodapés
+
+```text
+Redesenho visual do RadarAedes. Muda só a aparência: não mude dados, rotas, banco, cálculo de nível nem textos de saúde.
+REGRAS DE TODAS AS ETAPAS: contraste AA, foco visível, teclado completo, alternativa em texto para gráfico e mapa, rodapé com SAMU 192 sempre visível, sem dado pessoal, sem bibliotecas novas sem me avisar, animações só com CSS (150 a 300 ms) e desligadas com prefers-reduced-motion, nada que dependa só de hover (tudo também funciona por toque e foco). Lighthouse de acessibilidade ≥ 90. As cores de nível (verde, amarelo, laranja, vermelho) são usadas só para níveis.
+ETAPA 1, faça só isto e pare:
+1) Identidade: cor de marca azul-marinho, fundo off-white quente, escala tipográfica com mais contraste de tamanho entre título e texto, logotipo simples em SVG (ícone de radar + "RadarAedes"), originais e leves.
+2) Início: título maior, busca em destaque e o bloco "Como ler o semáforo" mais compacto. Preencha o espaço vazio com "Situação agora no estado", usando só dados já em cache no servidor; se não houver cache, não mostre o bloco. Sem cartões repetidos com borda colorida: use faixas, ícones e tipografia.
+3) Padronize todos os rodapés: "Dados do InfoDengue (modelo de <data>), consultados em <data>". Troque "via cache SQLite" por "via cache do servidor".
+Mostre o tamanho do build (npm run build) antes e depois. Explique cada arquivo alterado em 2 linhas.
+```
+
+#### Etapa 2 — Interações, contagem animada, pulso, dicas e esqueletos
+
+```text
+Mantenha todas as regras anteriores. ETAPA 2, só interações, faça e pare:
+1) Cartões e botões: transição suave ao passar o mouse e ao focar (leve elevação e mudança de sombra), sem mudar o layout.
+2) Números dos indicadores (casos estimados, casos por 100 mil, tendência): contagem animada de 0 ao valor, uma única vez, ao carregar.
+3) Semáforo: nível 3 e 4 com pulso suave de uns 2 segundos, uma vez; nível 1 e 2 sem pulso. Sem animação infinita.
+4) Dicas ao passar o mouse, tocar ou focar nos termos "casos estimados", "casos por 100 mil habitantes" e "tendência", com explicação curta em português simples (acessível por teclado e leitor de tela).
+5) Transição curta (fade) ao trocar de tela e esqueletos de carregamento no lugar de "Carregando...".
+Explique cada arquivo em 2 linhas.
+```
+
+#### Etapa 3 — Gráfico das 12 semanas, Mapa da UF e Comparar
+
+```text
+Mantenha todas as regras anteriores. ETAPA 3, faça e pare:
+1) Gráfico das 12 semanas: linha desenhada com animação curta no carregamento, linha-guia vertical e dica flutuante ao passar o mouse, tocar ou usar as setas (semana, casos, nível em texto). Mantenha a tabela alternativa.
+2) Mapa: destaque do município ao passar o mouse, animação suave ao selecionar na tabela, e mini gráfico das últimas semanas no popup. Ao passar o mouse numa linha da tabela, destaque o município no mapa, e vice-versa. Enquadre o mapa no estado (fitBounds). Troque "Resumo da carga..." por "92 municípios carregados. Dados consultados em <data>.", com os detalhes técnicos num bloco recolhível.
+3) Comparar: animação ao adicionar e remover municípios; marque o município de maior nível com um selo de texto e ícone, não só cor; quando a tendência for "indisponível", explique o motivo em uma linha.
+Mostre o tamanho do build antes e depois. Explique cada arquivo em 2 linhas.
+```
+
 
 ## Entregas
 

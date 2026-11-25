@@ -12,13 +12,14 @@ import {
   ShieldAlert,
   WifiOff,
 } from 'lucide-react';
+import { DicaTermo } from '../components/DicaTermo';
 import { GraficoTendencia } from '../components/GraficoTendencia';
+import { NumeroAnimado } from '../components/NumeroAnimado';
+import { RodapeFonte } from '../components/RodapeFonte';
 import { SemaforoCard } from '../components/SemaforoCard';
 import { Doenca, MunicipioItem, RespostaAlertaMunicipio } from '../types';
 import {
   formatarDataPtBr,
-  formatarNumeroPtBr,
-  formatarPercentualPtBr,
   formatarSemanaEpi,
   NOMES_DOENCA,
   rotuloTendencia,
@@ -117,7 +118,7 @@ export function PainelMunicipioPage({
           <button
             type="button"
             onClick={onVoltarInicio}
-            className="inline-flex min-h-[42px] items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
+            className="radar-interativo inline-flex min-h-[42px] items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Trocar município
@@ -128,7 +129,7 @@ export function PainelMunicipioPage({
               type="button"
               onClick={aoClicarSeguir}
               aria-pressed={seguindo}
-              className={`inline-flex min-h-[42px] items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-semibold transition-colors ${
+              className={`radar-interativo inline-flex min-h-[42px] items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-semibold ${
                 seguindo
                   ? 'border-blue-800 bg-blue-50 text-blue-950 hover:bg-blue-100'
                   : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-100'
@@ -163,7 +164,7 @@ export function PainelMunicipioPage({
                 type="button"
                 aria-pressed={ativo}
                 onClick={() => onChangeDoenca(d)}
-                className={`min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight transition-colors ${
+                className={`radar-interativo min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight ${
                   ativo ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-200'
                 }`}
               >
@@ -183,26 +184,51 @@ export function PainelMunicipioPage({
           <button
             type="button"
             onClick={onAbrirComparacao}
-            className="min-h-[36px] rounded-lg bg-amber-900 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-950"
+            className="radar-interativo min-h-[36px] rounded-lg bg-amber-900 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-950"
           >
             Gerenciar comparação
           </button>
         </div>
       )}
 
-      {/* Estado de carregamento */}
+      {/* Estado de carregamento com esqueleto estruturado */}
       {carregando && (
         <div
+          role="status"
           aria-busy="true"
           aria-live="polite"
-          className="space-y-4 rounded-xl border border-slate-200 bg-white p-6"
+          className="space-y-6"
         >
-          <p className="text-sm font-medium text-slate-700">
-            Carregando painel epidemiológico...
-          </p>
-          <div className="h-8 w-64 animate-pulse rounded bg-slate-200" />
-          <div className="h-28 w-full animate-pulse rounded-xl bg-slate-200" />
-          <div className="h-56 w-full animate-pulse rounded-xl bg-slate-100" />
+          <span className="sr-only">Carregando painel epidemiológico...</span>
+          <div className="space-y-2">
+            <div className="h-4 w-52 max-w-full rounded bg-[#EAE4DA]" />
+            <div className="h-8 w-80 max-w-full rounded-lg bg-[#E2DBD0]" />
+          </div>
+          <div className="rounded-xl border border-[#E2DBD0] bg-white p-5 sm:p-6">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 shrink-0 rounded-xl bg-[#EAE4DA]" />
+              <div className="flex-1 space-y-2.5">
+                <div className="h-4 w-56 max-w-full rounded bg-[#EAE4DA]" />
+                <div className="h-7 w-72 max-w-full rounded bg-[#E2DBD0]" />
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((item) => (
+              <div
+                key={item}
+                className="space-y-2.5 rounded-xl border border-[#E2DBD0] bg-white p-4"
+              >
+                <div className="h-3.5 w-32 rounded bg-[#EAE4DA]" />
+                <div className="h-7 w-20 rounded bg-[#E2DBD0]" />
+                <div className="h-3 w-36 rounded bg-[#F3EFE7]" />
+              </div>
+            ))}
+          </div>
+          <div className="rounded-xl border border-[#E2DBD0] bg-white p-5 sm:p-6">
+            <div className="h-5 w-60 max-w-full rounded bg-[#EAE4DA]" />
+            <div className="mt-4 h-52 w-full rounded-lg bg-[#F3EFE7]" />
+          </div>
         </div>
       )}
 
@@ -215,7 +241,7 @@ export function PainelMunicipioPage({
             <button
               type="button"
               onClick={() => setTentativa((t) => t + 1)}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800"
+              className="radar-interativo inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800"
             >
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
               Tentar novamente
@@ -223,7 +249,7 @@ export function PainelMunicipioPage({
             <button
               type="button"
               onClick={onVoltarInicio}
-              className="inline-flex min-h-[44px] items-center rounded-lg border border-red-700 bg-white px-4 py-2 text-sm font-semibold text-red-900 hover:bg-red-100"
+              className="radar-interativo inline-flex min-h-[44px] items-center rounded-lg border border-red-700 bg-white px-4 py-2 text-sm font-semibold text-red-900 hover:bg-red-100"
             >
               Voltar ao início
             </button>
@@ -259,7 +285,7 @@ export function PainelMunicipioPage({
 
           {/* Estado vazio (ex.: Zika sem registros no período) */}
           {dados.vazio ? (
-            <section className="rounded-xl border border-slate-200 bg-white p-6">
+            <section className="radar-cartao rounded-xl border border-slate-200 bg-white p-6">
               <h2 className="text-lg font-bold text-slate-900">
                 Sem registros para {NOMES_DOENCA[dados.doenca]}
               </h2>
@@ -272,14 +298,14 @@ export function PainelMunicipioPage({
                 <button
                   type="button"
                   onClick={() => onChangeDoenca('dengue')}
-                  className="min-h-[44px] rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+                  className="radar-interativo min-h-[44px] rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
                 >
                   Ver dados de Dengue
                 </button>
                 <button
                   type="button"
                   onClick={onVoltarInicio}
-                  className="min-h-[44px] rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
+                  className="radar-interativo min-h-[44px] rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
                 >
                   Escolher outro município
                 </button>
@@ -317,10 +343,17 @@ export function PainelMunicipioPage({
                 aria-label="Indicadores da semana e tendência"
                 className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
               >
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-semibold text-slate-600">Casos estimados (última semana)</p>
+                <div className="radar-cartao rounded-xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold text-slate-600">
+                    <DicaTermo termo="casos_estimados" rotulo="Casos estimados (última semana)" />
+                  </p>
                   <p className="mt-1 text-2xl font-bold text-slate-950 tabular-nums">
-                    {formatarNumeroPtBr(ultimaSemana?.casos_est, 1, 0)}
+                    <NumeroAnimado
+                      key={`est-${geocode}-${doenca}-${ultimaSemana?.semana_epi ?? 0}`}
+                      valor={ultimaSemana?.casos_est}
+                      maxCasas={1}
+                      minCasas={0}
+                    />
                   </p>
                   <p className="mt-1 text-xs text-slate-600 tabular-nums">
                     Intervalo:{' '}
@@ -334,29 +367,39 @@ export function PainelMunicipioPage({
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="radar-cartao rounded-xl border border-slate-200 bg-white p-4">
                   <p className="text-xs font-semibold text-slate-600">Casos notificados</p>
                   <p className="mt-1 text-2xl font-bold text-slate-950 tabular-nums">
-                    {ultimaSemana?.casos !== null && ultimaSemana?.casos !== undefined
-                      ? ultimaSemana.casos.toLocaleString('pt-BR')
-                      : 'N/D'}
+                    <NumeroAnimado
+                      key={`not-${geocode}-${doenca}-${ultimaSemana?.semana_epi ?? 0}`}
+                      valor={ultimaSemana?.casos}
+                      maxCasas={0}
+                      minCasas={0}
+                    />
                   </p>
                   <p className="mt-1 text-xs text-slate-600">
                     Sujeito a revisão por atraso de digitação
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs font-semibold text-slate-600">Casos por 100 mil habitantes</p>
+                <div className="radar-cartao rounded-xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold text-slate-600">
+                    <DicaTermo termo="incidencia_100k" rotulo="Casos por 100 mil habitantes" />
+                  </p>
                   <p className="mt-1 text-2xl font-bold text-slate-950 tabular-nums">
-                    {formatarNumeroPtBr(ultimaSemana?.incidencia_100k, 1, 1)}
+                    <NumeroAnimado
+                      key={`inc-${geocode}-${doenca}-${ultimaSemana?.semana_epi ?? 0}`}
+                      valor={ultimaSemana?.incidencia_100k}
+                      maxCasas={1}
+                      minCasas={1}
+                    />
                   </p>
                   <p className="mt-1 text-xs text-slate-600">Taxa semanal estimada</p>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="radar-cartao rounded-xl border border-slate-200 bg-white p-4">
                   <p className="text-xs font-semibold text-slate-600">
-                    Tendência (2 últimas semanas completas)
+                    <DicaTermo termo="tendencia" rotulo="Tendência (2 últimas semanas completas)" />
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <IconeTendencia tendencia={dados.tendencia} />
@@ -365,16 +408,38 @@ export function PainelMunicipioPage({
                     </span>
                     {dados.variacaoPercentual !== null && (
                       <span className="font-mono-tabular text-xs font-semibold text-slate-700">
-                        ({formatarPercentualPtBr(dados.variacaoPercentual)})
+                        (
+                        <NumeroAnimado
+                          key={`pct-${geocode}-${doenca}-${ultimaSemana?.semana_epi ?? 0}`}
+                          valor={dados.variacaoPercentual}
+                          modoPercentual
+                        />
+                        )
                       </span>
                     )}
                   </div>
                   <p className="mt-1 text-xs text-slate-700 tabular-nums">
                     {dados.casosAnterior !== null && dados.casosAtual !== null ? (
                       <>
-                        de <strong>{formatarNumeroPtBr(dados.casosAnterior, 1, 0)}</strong> para{' '}
-                        <strong>{formatarNumeroPtBr(dados.casosAtual, 1, 0)}</strong> casos
-                        estimados
+                        de{' '}
+                        <strong>
+                          <NumeroAnimado
+                            key={`ant-${geocode}-${doenca}-${ultimaSemana?.semana_epi ?? 0}`}
+                            valor={dados.casosAnterior}
+                            maxCasas={1}
+                            minCasas={0}
+                          />
+                        </strong>{' '}
+                        para{' '}
+                        <strong>
+                          <NumeroAnimado
+                            key={`atu-${geocode}-${doenca}-${ultimaSemana?.semana_epi ?? 0}`}
+                            valor={dados.casosAtual}
+                            maxCasas={1}
+                            minCasas={0}
+                          />
+                        </strong>{' '}
+                        casos estimados
                         {dados.semanasComparadas
                           ? ` (${formatarSemanaEpi(
                               dados.semanasComparadas[0],
@@ -407,7 +472,7 @@ export function PainelMunicipioPage({
                 <button
                   type="button"
                   onClick={() => onAbrirOrientacoes(dados.nivelAtual)}
-                  className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+                  className="radar-interativo inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
                 >
                   <ShieldAlert className="h-4 w-4" aria-hidden="true" />
                   O que fazer neste nível
@@ -415,7 +480,7 @@ export function PainelMunicipioPage({
                 <button
                   type="button"
                   onClick={onAbrirMapa}
-                  className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
+                  className="radar-interativo inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
                 >
                   <Map className="h-4 w-4" aria-hidden="true" />
                   Ver mapa de {dados.municipio.uf || 'UF'}
@@ -424,7 +489,7 @@ export function PainelMunicipioPage({
                   <button
                     type="button"
                     onClick={onAbrirComparacao}
-                    className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
+                    className="radar-interativo inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100"
                   >
                     Comparar municípios seguidos ({totalSeguidos}/{MAX_SEGUIDOS})
                   </button>
@@ -433,9 +498,11 @@ export function PainelMunicipioPage({
             </>
           )}
 
-          <p className="border-t border-slate-200 pt-3 text-xs text-slate-600">
-            Fonte: {dados.fonte}, atualizado em {formatarDataPtBr(dados.atualizadoEm)}
-          </p>
+          <RodapeFonte
+            modeloData={dados.versaoModelo || dados.atualizadoEm}
+            consultaData={dados.dataColeta || dados.atualizadoEm}
+            sufixo={dados.modoOffline ? '· Modo offline' : undefined}
+          />
         </>
       )}
     </div>

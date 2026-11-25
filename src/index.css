@@ -5,10 +5,18 @@
     --font-display: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
     --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    --radar-navy: #0f2744;
+    --radar-navy-hover: #16365c;
+    --radar-navy-accent: #1b4965;
+    --radar-bg: #faf7f2;
+    --radar-surface: #ffffff;
+    --radar-border: #e2dbd0;
   }
 
   html {
     font-family: var(--font-sans);
+    background-color: var(--radar-bg);
+    color: #17212b;
     scroll-behavior: smooth;
   }
 
@@ -19,7 +27,12 @@
 
   /* Foco visível de alto contraste para navegação completa por teclado */
   :focus-visible {
-    outline: 3px solid #1d4ed8;
+    outline: 3px solid #1b4965;
+    outline-offset: 2px;
+  }
+
+  [data-surface="dark"] :focus-visible {
+    outline: 3px solid #ffffff;
     outline-offset: 2px;
   }
 }
@@ -33,9 +46,145 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Transição leve apenas com CSS (150–300ms) para aparição de blocos */
+@keyframes radar-entrada-suave {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade curto ao trocar de tela */
+@keyframes radar-fade-tela {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Pulso suave único (~2s) para níveis 3 e 4 do semáforo, sem repetição infinita */
+@keyframes radar-pulso-laranja {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(194, 65, 12, 0.34);
+  }
+  45% {
+    transform: scale(1.008);
+    box-shadow: 0 0 0 10px rgba(194, 65, 12, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(194, 65, 12, 0);
+  }
+}
+
+@keyframes radar-pulso-vermelho {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(185, 28, 28, 0.34);
+  }
+  45% {
+    transform: scale(1.008);
+    box-shadow: 0 0 0 10px rgba(185, 28, 28, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(185, 28, 28, 0);
+  }
+}
+
+/* Desenho curto da linha do gráfico no carregamento */
+@keyframes radar-desenhar-linha {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Saída suave ao remover item da comparação */
+@keyframes radar-saida-suave {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.97) translateY(-4px);
+  }
+}
+
+.radar-entrada {
+  animation: radar-entrada-suave 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.radar-saida {
+  animation: radar-saida-suave 190ms ease-in forwards;
+}
+
+.radar-linha-grafico {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: radar-desenhar-linha 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.radar-fade-tela {
+  animation: radar-fade-tela 200ms ease-out both;
+}
+
+.radar-pulso-laranja {
+  animation: radar-pulso-laranja 2s ease-in-out 1 both;
+}
+
+.radar-pulso-vermelho {
+  animation: radar-pulso-vermelho 2s ease-in-out 1 both;
+}
+
+.radar-transicao {
+  transition-property: background-color, border-color, color, opacity, transform, box-shadow;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.radar-interativo {
+  transition-property: background-color, border-color, color, opacity, transform, box-shadow;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.radar-interativo:not(:disabled):hover,
+.radar-interativo:not(:disabled):focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -10px rgba(15, 39, 68, 0.28);
+}
+
+.radar-interativo:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.radar-cartao {
+  transition-property: transform, box-shadow, border-color;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.radar-cartao:hover,
+.radar-cartao:focus-within {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -16px rgba(15, 39, 68, 0.24);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
@@ -62,4 +211,3 @@
 .radar-rotulo-critico.leaflet-tooltip::before {
   display: none;
 }
-

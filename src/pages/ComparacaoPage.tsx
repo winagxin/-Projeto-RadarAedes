@@ -1,9 +1,10 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
+  Flag,
   Info,
   Minus,
   OctagonAlert,
@@ -13,6 +14,9 @@ import {
   Trash2,
   WifiOff,
 } from 'lucide-react';
+import { DicaTermo } from '../components/DicaTermo';
+import { NumeroAnimado } from '../components/NumeroAnimado';
+import { RodapeFonte } from '../components/RodapeFonte';
 import {
   Doenca,
   EstadoItem,
@@ -78,7 +82,9 @@ export function ComparacaoPage({
   const [carregandoListaMun, setCarregandoListaMun] = useState(false);
 
   const [resultados, setResultados] = useState<Record<string, EstadoItemComparacao>>({});
+  const [removendoCodigos, setRemovendoCodigos] = useState<string[]>([]);
   const [tentativa, setTentativa] = useState(0);
+  const timeoutsRef = useRef<number[]>([]);
 
   const ufSelectId = useId();
   const munSelectId = useId();
@@ -204,10 +210,49 @@ export function ComparacaoPage({
     }
   }
 
+  useEffect(() => {
+    return () => {
+      for (const t of timeoutsRef.current) {
+        window.clearTimeout(t);
+      }
+    };
+  }, []);
+
+  function solicitarRemocao(codigoIbge: string) {
+    if (removendoCodigos.includes(codigoIbge)) return;
+
+    const prefereReduzido =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefereReduzido) {
+      onRemoverSeguido(codigoIbge);
+      return;
+    }
+
+    setRemovendoCodigos((prev) => [...prev, codigoIbge]);
+    const id = window.setTimeout(() => {
+      setRemovendoCodigos((prev) => prev.filter((c) => c !== codigoIbge));
+      onRemoverSeguido(codigoIbge);
+    }, 190);
+    timeoutsRef.current.push(id);
+  }
+
   const algumOffline = Object.values(resultados).some((r) => r.dados?.modoOffline);
+  const primeiroComDados = Object.values(resultados).find((r) => r.dados)?.dados;
   const dataMaisRecente =
-    Object.values(resultados).find((r) => r.dados?.atualizadoEm)?.dados?.atualizadoEm ||
-    new Date().toISOString();
+    primeiroComDados?.dataColeta || primeiroComDados?.atualizadoEm || new Date().toISOString();
+  const modeloMaisRecente = primeiroComDados?.versaoModelo || null;
+
+  const niveisComparaveis = seguidos
+    .map((s) => resultados[s.codigo_ibge]?.dados)
+    .filter((d): d is RespostaAlertaMunicipio => Boolean(d && !d.vazio && d.nivelAtual !== null))
+    .map((d) => d.nivelAtual as number);
+  const maiorNivel = niveisComparaveis.length >= 2 ? Math.max(...niveisComparaveis) : null;
+  const menorNivel = niveisComparaveis.length >= 2 ? Math.min(...niveisComparaveis) : null;
+  const haDiferencaNivel =
+    maiorNivel !== null && menorNivel !== null && maiorNivel > menorNivel;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -234,7 +279,7 @@ export function ComparacaoPage({
                 type="button"
                 aria-pressed={ativo}
                 onClick={() => onChangeDoenca(d)}
-                className={`min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight transition-colors ${
+                className={`radar-interativo min-h-[38px] rounded-md px-3 py-1.5 text-center text-xs font-semibold leading-tight ${
                   ativo ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-200'
                 }`}
               >
@@ -249,7 +294,7 @@ export function ComparacaoPage({
       <form
         onSubmit={aoAdicionar}
         aria-label="Adicionar município para seguir e comparar"
-        className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5"
+        className="radar-cartao rounded-xl border border-slate-200 bg-white p-4 sm:p-5"
       >
         <div className="grid gap-3 sm:grid-cols-12 sm:items-end">
           <div className="sm:col-span-2">
@@ -322,7 +367,7 @@ export function ComparacaoPage({
                 !munSelecionadoCodigo ||
                 seguidos.some((s) => s.codigo_ibge === munSelecionadoCodigo)
               }
-              className="inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="radar-interativo inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               {seguidos.length >= MAX_SEGUIDOS
@@ -345,7 +390,7 @@ export function ComparacaoPage({
 
       {/* Estado vazio dos cartões */}
       {seguidos.length === 0 ? (
-        <section className="rounded-xl border border-slate-200 bg-white p-6">
+        <section className="radar-cartao rounded-xl border border-slate-200 bg-white p-6">
           <h2 className="text-lg font-bold text-slate-950">Nenhum município seguido ainda</h2>
           <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-700">
             Adicione até {MAX_SEGUIDOS} municípios usando o formulário acima (ou clicando em
@@ -355,7 +400,7 @@ export function ComparacaoPage({
           <button
             type="button"
             onClick={adicionarSugestoesRj}
-            className="mt-4 min-h-[44px] rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            className="radar-interativo mt-4 min-h-[44px] rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
           >
             Carregar exemplo (Rio de Janeiro, Niterói e Duque de Caxias)
           </button>
@@ -384,33 +429,51 @@ export function ComparacaoPage({
               const cfg = d && !d.vazio ? obterConfigNivel(d.nivelAtual) : null;
               const ultimaSe = d && d.serie.length > 0 ? d.serie[d.serie.length - 1] : null;
               const tend = d ? rotuloTendencia(d.tendencia) : null;
+              const estaRemovendo = removendoCodigos.includes(mun.codigo_ibge);
+              const ehMaiorNivel = Boolean(
+                haDiferencaNivel && d && !d.vazio && d.nivelAtual === maiorNivel
+              );
 
               return (
                 <article
                   key={mun.codigo_ibge}
-                  className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5"
+                  className={`${
+                    estaRemovendo ? 'radar-saida' : 'radar-entrada'
+                  } radar-cartao flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5`}
                 >
                   <div className="space-y-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-xs font-medium text-slate-600">{mun.uf}</p>
                         <h2 className="text-lg font-bold text-slate-950">{mun.nome}</h2>
+                        {ehMaiorNivel && (
+                          <span className="mt-1 inline-flex items-center gap-1 rounded-md bg-[#0F2744] px-2 py-0.5 text-[11px] font-semibold text-white">
+                            <Flag className="h-3 w-3" aria-hidden="true" />
+                            Maior nível
+                          </span>
+                        )}
                       </div>
                       <button
                         type="button"
-                        onClick={() => onRemoverSeguido(mun.codigo_ibge)}
+                        disabled={estaRemovendo}
+                        onClick={() => solicitarRemocao(mun.codigo_ibge)}
                         aria-label={`Remover ${mun.nome} da comparação`}
                         title={`Remover ${mun.nome} da comparação`}
-                        className="inline-flex min-h-[38px] min-w-[38px] items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-red-50 hover:text-red-800"
+                        className="radar-interativo inline-flex min-h-[38px] min-w-[38px] items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-red-50 hover:text-red-800 disabled:opacity-50"
                       >
                         <Trash2 className="h-4 w-4" aria-hidden="true" />
                       </button>
                     </div>
 
                     {item?.carregando && (
-                      <div aria-busy="true" className="space-y-2 py-4">
-                        <div className="h-14 animate-pulse rounded-lg bg-slate-200" />
-                        <div className="h-10 animate-pulse rounded-lg bg-slate-100" />
+                      <div role="status" aria-busy="true" className="space-y-3 py-2">
+                        <span className="sr-only">Carregando dados de {mun.nome}...</span>
+                        <div className="h-14 rounded-lg bg-[#EAE4DA]" />
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="h-10 rounded-lg bg-[#F3EFE7]" />
+                          <div className="h-10 rounded-lg bg-[#F3EFE7]" />
+                        </div>
+                        <div className="h-10 rounded-lg bg-[#F3EFE7]" />
                       </div>
                     )}
 
@@ -460,19 +523,38 @@ export function ComparacaoPage({
 
                             <dl className="grid grid-cols-2 gap-3 text-sm tabular-nums">
                               <div>
-                                <dt className="text-xs text-slate-600">Casos estimados</dt>
+                                <dt className="text-xs text-slate-600">
+                                  <DicaTermo termo="casos_estimados" rotulo="Casos estimados" />
+                                </dt>
                                 <dd className="font-bold text-slate-950">
-                                  {formatarNumeroPtBr(ultimaSe?.casos_est, 1, 0)}
+                                  <NumeroAnimado
+                                    key={`cmp-est-${mun.codigo_ibge}-${doenca}`}
+                                    valor={ultimaSe?.casos_est}
+                                    maxCasas={1}
+                                    minCasas={0}
+                                  />
                                 </dd>
                               </div>
                               <div>
-                                <dt className="text-xs text-slate-600">Casos por 100 mil habitantes</dt>
+                                <dt className="text-xs text-slate-600">
+                                  <DicaTermo
+                                    termo="incidencia_100k"
+                                    rotulo="Casos por 100 mil habitantes"
+                                  />
+                                </dt>
                                 <dd className="font-bold text-slate-950">
-                                  {formatarNumeroPtBr(ultimaSe?.incidencia_100k, 1, 1)}
+                                  <NumeroAnimado
+                                    key={`cmp-inc-${mun.codigo_ibge}-${doenca}`}
+                                    valor={ultimaSe?.incidencia_100k}
+                                    maxCasas={1}
+                                    minCasas={1}
+                                  />
                                 </dd>
                               </div>
                               <div className="col-span-2">
-                                <dt className="text-xs text-slate-600">Tendência</dt>
+                                <dt className="text-xs text-slate-600">
+                                  <DicaTermo termo="tendencia" rotulo="Tendência" />
+                                </dt>
                                 <dd className="mt-0.5 flex items-center gap-1.5 font-semibold text-slate-900">
                                   {d.tendencia === 'sobe' ? (
                                     <ArrowUpRight className="h-4 w-4 text-red-700" aria-hidden="true" />
@@ -484,17 +566,25 @@ export function ComparacaoPage({
                                   <span>{tend?.titulo.replace('Tendência: ', '')}</span>
                                   {d.variacaoPercentual !== null && (
                                     <span className="font-mono-tabular text-xs text-slate-700">
-                                      ({formatarPercentualPtBr(d.variacaoPercentual)})
+                                      (
+                                      <NumeroAnimado
+                                        key={`cmp-pct-${mun.codigo_ibge}-${doenca}`}
+                                        valor={d.variacaoPercentual}
+                                        modoPercentual
+                                      />
+                                      )
                                     </span>
                                   )}
                                 </dd>
-                                {d.casosAnterior !== null && d.casosAtual !== null && (
+                                {d.casosAnterior !== null && d.casosAtual !== null ? (
                                   <p className="text-xs text-slate-600">
                                     de {formatarNumeroPtBr(d.casosAnterior, 1, 0)} para{' '}
                                     {formatarNumeroPtBr(d.casosAtual, 1, 0)} casos est.
                                     {d.poucosCasos ? ' · poucos casos: variação instável' : ''}
                                   </p>
-                                )}
+                                ) : d.tendencia === 'indisponivel' && tend?.explicacao ? (
+                                  <p className="text-xs text-slate-600">{tend.explicacao}</p>
+                                ) : null}
                               </div>
                             </dl>
                           </>
@@ -506,7 +596,7 @@ export function ComparacaoPage({
                   <button
                     type="button"
                     onClick={() => onAbrirPainel(mun)}
-                    className="mt-4 min-h-[42px] w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-100"
+                    className="radar-interativo mt-4 min-h-[42px] w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-100"
                   >
                     Ver painel do município
                   </button>
@@ -520,7 +610,7 @@ export function ComparacaoPage({
       {/* Tabela comparativa alternativa acessível (sempre visível) */}
       <section
         aria-labelledby="titulo-tabela-comparacao"
-        className="rounded-xl border border-slate-200 bg-white p-5"
+        className="radar-cartao rounded-xl border border-slate-200 bg-white p-5"
       >
         <h2 id="titulo-tabela-comparacao" className="text-lg font-bold text-slate-950">
           Tabela comparativa ({seguidos.length}/{MAX_SEGUIDOS})
@@ -561,13 +651,28 @@ export function ComparacaoPage({
                   const cfg = d && !d.vazio ? obterConfigNivel(d.nivelAtual) : null;
                   const ultimaSe = d && d.serie.length > 0 ? d.serie[d.serie.length - 1] : null;
                   const tend = d ? rotuloTendencia(d.tendencia) : null;
+                  const estaRemovendo = removendoCodigos.includes(mun.codigo_ibge);
+                  const ehMaiorNivel = Boolean(
+                    haDiferencaNivel && d && !d.vazio && d.nivelAtual === maiorNivel
+                  );
 
                   return (
-                    <tr key={mun.codigo_ibge} className="hover:bg-slate-50">
+                    <tr
+                      key={mun.codigo_ibge}
+                      className={`${
+                        estaRemovendo ? 'radar-saida' : 'radar-entrada'
+                      } hover:bg-slate-50`}
+                    >
                       <td className="py-2.5 pr-4">
                         <span className="font-semibold text-slate-950">
                           {mun.nome} ({mun.uf})
                         </span>
+                        {ehMaiorNivel && (
+                          <span className="ml-2 inline-flex items-center gap-1 rounded-md bg-[#0F2744] px-2 py-0.5 text-[11px] font-semibold text-white">
+                            <Flag className="h-3 w-3" aria-hidden="true" />
+                            Maior nível
+                          </span>
+                        )}
                         <span className="block font-mono-tabular text-xs text-slate-600">
                           IBGE {mun.codigo_ibge}
                         </span>
@@ -578,13 +683,21 @@ export function ComparacaoPage({
                           : '—'}
                       </td>
                       <td className="py-2.5 pr-4 font-medium text-slate-900">
-                        {item?.carregando
-                          ? 'Carregando...'
-                          : item?.erro
-                          ? 'Erro ao consultar'
-                          : d?.vazio
-                          ? `Não há casos de ${NOMES_DOENCA[doenca].toLowerCase()} registrados no InfoDengue para este município em ${new Date().getFullYear()}. Isso não significa ausência de risco: pode haver atraso ou falta de notificação.`
-                          : cfg?.rotulo ?? `Nível ${d?.nivelAtual}`}
+                        {item?.carregando ? (
+                          <>
+                            <span className="sr-only">Carregando dados de {mun.nome}...</span>
+                            <span
+                              aria-hidden="true"
+                              className="inline-block h-4 w-28 rounded bg-[#E2DBD0]"
+                            />
+                          </>
+                        ) : item?.erro ? (
+                          'Erro ao consultar'
+                        ) : d?.vazio ? (
+                          `Não há casos de ${NOMES_DOENCA[doenca].toLowerCase()} registrados no InfoDengue para este município em ${new Date().getFullYear()}. Isso não significa ausência de risco: pode haver atraso ou falta de notificação.`
+                        ) : (
+                          cfg?.rotulo ?? `Nível ${d?.nivelAtual}`
+                        )}
                       </td>
                       <td className="py-2.5 pr-4 text-right text-slate-900">
                         {formatarNumeroPtBr(ultimaSe?.casos_est, 1, 0)}
@@ -601,13 +714,15 @@ export function ComparacaoPage({
                                 ? ` (${formatarPercentualPtBr(d.variacaoPercentual)})`
                                 : ''}
                             </span>
-                            {d.casosAnterior !== null && d.casosAtual !== null && (
+                            {d.casosAnterior !== null && d.casosAtual !== null ? (
                               <span className="block text-xs text-slate-600">
                                 de {formatarNumeroPtBr(d.casosAnterior, 1, 0)} para{' '}
                                 {formatarNumeroPtBr(d.casosAtual, 1, 0)} casos est.
                                 {d.poucosCasos ? ' · poucos casos: variação instável' : ''}
                               </span>
-                            )}
+                            ) : d.tendencia === 'indisponivel' && tend?.explicacao ? (
+                              <span className="block text-xs text-slate-600">{tend.explicacao}</span>
+                            ) : null}
                           </div>
                         ) : (
                           '—'
@@ -618,16 +733,17 @@ export function ComparacaoPage({
                           <button
                             type="button"
                             onClick={() => onAbrirPainel(mun)}
-                            className="min-h-[36px] rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-100"
+                            className="radar-interativo min-h-[36px] rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-100"
                           >
                             Ver painel do município
                           </button>
                           <button
                             type="button"
-                            onClick={() => onRemoverSeguido(mun.codigo_ibge)}
+                            disabled={estaRemovendo}
+                            onClick={() => solicitarRemocao(mun.codigo_ibge)}
                             aria-label={`Remover ${mun.nome} da comparação`}
                             title={`Remover ${mun.nome} da comparação`}
-                            className="inline-flex min-h-[36px] min-w-[36px] items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-red-50 hover:text-red-800"
+                            className="radar-interativo inline-flex min-h-[36px] min-w-[36px] items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-red-50 hover:text-red-800 disabled:opacity-50"
                           >
                             <Trash2 className="h-4 w-4" aria-hidden="true" />
                           </button>
@@ -642,9 +758,11 @@ export function ComparacaoPage({
         </div>
       </section>
 
-      <p className="border-t border-slate-200 pt-3 text-xs text-slate-600">
-        Fonte: InfoDengue (via cache SQLite), atualizado em {formatarDataPtBr(dataMaisRecente)}
-      </p>
+      <RodapeFonte
+        modeloData={modeloMaisRecente}
+        consultaData={dataMaisRecente}
+        sufixo="(via cache do servidor)"
+      />
     </div>
   );
 }

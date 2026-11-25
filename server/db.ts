@@ -81,10 +81,19 @@ export interface ResumoBanco {
 
 let sqliteInstance: DatabaseSync | null = null;
 let pgPoolInstance: Pool | null = null;
+let conexaoRegistrada = false;
 
 function getDatabaseUrl(): string | null {
   const url = (process.env.DATABASE_URL || '').trim();
-  return url.length > 0 ? url : null;
+  if (url.length === 0) {
+    return null;
+  }
+  if (!url.startsWith('postgres://') && !url.startsWith('postgresql://')) {
+    throw new Error(
+      'Configuração inválida: DATABASE_URL deve começar com "postgres://" ou "postgresql://".'
+    );
+  }
+  return url;
 }
 
 export function isPostgresEnabled(): boolean {
@@ -181,6 +190,7 @@ export async function closeDb(): Promise<void> {
     }
     sqliteInstance = null;
   }
+  conexaoRegistrada = false;
 }
 
 async function withPgTransaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
@@ -278,60 +288,82 @@ function mapAlertaResumoUfRow(row: Record<string, unknown>): AlertaResumoUfRow {
 export async function runMigrations(customSqliteDb?: DatabaseSync): Promise<void> {
   if (isPostgresEnabled() && !customSqliteDb) {
     const pool = getPgPool();
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS municipios (
-        codigo_ibge TEXT PRIMARY KEY,
-        nome TEXT NOT NULL,
-        uf TEXT NOT NULL,
-        populacao INTEGER,
-        is_teste INTEGER NOT NULL DEFAULT 0 CHECK (is_teste IN (0, 1))
-      );
+    try {
+      await pool.query('SELECT 1');
+      if (!conexaoRegistrada) {
+        console.log('Conexão com o banco de dados PostgreSQL estabelecida com sucesso.');
+        conexaoRegistrada = true;
+      }
 
-      CREATE TABLE IF NOT EXISTS consultas_alerta (
-        id SERIAL PRIMARY KEY,
-        codigo_ibge TEXT NOT NULL REFERENCES municipios(codigo_ibge),
-        doenca TEXT NOT NULL CHECK (doenca IN ('dengue', 'chikungunya', 'zika')),
-        data_coleta TEXT NOT NULL,
-        fonte TEXT NOT NULL,
-        modo_offline INTEGER NOT NULL DEFAULT 0 CHECK (modo_offline IN (0, 1)),
-        is_teste INTEGER NOT NULL DEFAULT 0 CHECK (is_teste IN (0, 1))
-      );
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS municipios (
+          codigo_ibge TEXT PRIMARY KEY,
+          nome TEXT NOT NULL,
+          uf TEXT NOT NULL,
+          populacao INTEGER,
+          is_teste INTEGER NOT NULL DEFAULT 0 CHECK (is_teste IN (0, 1))
+        );
 
-      CREATE TABLE IF NOT EXISTS alerta_semanal (
-        id SERIAL PRIMARY KEY,
-        consulta_id INTEGER NOT NULL REFERENCES consultas_alerta(id) ON DELETE CASCADE,
-        codigo_ibge TEXT NOT NULL REFERENCES municipios(codigo_ibge),
-        doenca TEXT NOT NULL CHECK (doenca IN ('dengue', 'chikungunya', 'zika')),
-        semana_epi INTEGER NOT NULL,
-        data_ini_se BIGINT NOT NULL,
-        nivel INTEGER NOT NULL,
-        casos_est DOUBLE PRECISION,
-        casos_est_min DOUBLE PRECISION,
-        casos_est_max DOUBLE PRECISION,
-        casos INTEGER,
-        incidencia_100k DOUBLE PRECISION,
-        versao_modelo TEXT,
-        is_teste INTEGER NOT NULL DEFAULT 0 CHECK (is_teste IN (0, 1)),
-        UNIQUE (codigo_ibge, doenca, semana_epi)
-      );
+        CREATE TABLE IF NOT EXISTS consultas_alerta (
+          id SERIAL PRIMARY KEY,
+          codigo_ibge TEXT NOT NULL REFERENCES municipios(codigo_ibge),
+          doenca TEXT NOT NULL CHECK (doenca IN ('dengue', 'chikungunya', 'zika')),
+          data_coleta TEXT NOT NULL,
+          fonte TEXT NOT NULL,
+          modo_offline INTEGER NOT NULL DEFAULT 0 CHECK (modo_offline IN (0, 1)),
+          is_teste INTEGER NOT NULL DEFAULT 0 CHECK (is_teste IN (0, 1))
+        );
 
-      CREATE TABLE IF NOT EXISTS cache_malhas_uf (
-        uf TEXT PRIMARY KEY,
-        geojson TEXT NOT NULL,
-        data_coleta TEXT NOT NULL,
-        is_teste INTEGER NOT NULL DEFAULT 0 CHECK (is_teste IN (0, 1))
-      );
+        CREATE TABLE IF NOT EXISTS alerta_semanal (
+          id SERIAL PRIMARY KEY,
+          consulta_id INTEGER NOT NULL REFERENCES consultas_alerta(id) ON DELETE CASCADE,
+          codigo_ibge TEXT NOT NULL REFERENCES municipios(codigo_ibge),
+          doenca TEXT NOT NULL CHECK (doenca IN ('dengue', 'chikungunya', 'zika')),
+          semana_epi INTEGER NOT NULL,
+          data_ini_se BIGINT NOT NULL,
+          nivel INTEGER NOT NULL,
+          casos_est DOUBLE PRECISION,
+          casos_est_min DOUBLE PRECISION,
+          casos_est_max DOUBLE PRECISION,
+          casos INTEGER,
+          incidencia_100k DOUBLE PRECISION,
+          versao_modelo TEXT,
+          is_teste INTEGER NOT NULL DEFAULT 0 CHECK (is_teste IN (0, 1)),
+          UNIQUE (codigo_ibge, doenca, semana_epi)
+        );
 
-      CREATE INDEX IF NOT EXISTS idx_municipios_uf ON municipios(uf);
-      CREATE INDEX IF NOT EXISTS idx_consultas_lookup
-        ON consultas_alerta(codigo_ibge, doenca, data_coleta DESC);
-      CREATE INDEX IF NOT EXISTS idx_alerta_serie
-        ON alerta_semanal(codigo_ibge, doenca, semana_epi DESC);
-    `);
-    return;
+        CREATE TABLE IF NOT EXISTS cache_malhas_uf (
+          uf TEXT PRIMARY KEY,
+          geojson TEXT NOT NULL,
+          data_coleta TEXT NOT NULL,
+          is_teste INTEGER NOT NULL DEFAULT 0 CHECK (is_teste IN (0, 1))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_municipios_uf ON municipios(uf);
+        CREATE INDEX IF NOT EXISTS idx_consultas_lookup
+          ON consultas_alerta(codigo_ibge, doenca, data_coleta DESC);
+        CREATE INDEX IF NOT EXISTS idx_alerta_serie
+          ON alerta_semanal(codigo_ibge, doenca, semana_epi DESC);
+      `);
+      return;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('Configuração inválida: DATABASE_URL')) {
+        throw err;
+      }
+      throw new Error(
+        'Não foi possível conectar ou preparar as tabelas no PostgreSQL. Verifique DATABASE_URL e a disponibilidade do banco.'
+      );
+    }
   }
 
   const db = customSqliteDb ?? getDb();
+  db.exec('SELECT 1;');
+  if (!customSqliteDb && !conexaoRegistrada) {
+    console.log('Conexão com o banco de dados SQLite estabelecida com sucesso.');
+    conexaoRegistrada = true;
+  }
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS municipios (
       codigo_ibge TEXT PRIMARY KEY,

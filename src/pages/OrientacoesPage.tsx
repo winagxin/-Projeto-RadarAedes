@@ -6,8 +6,9 @@ import {
   OctagonAlert,
   ShieldCheck,
 } from 'lucide-react';
+import { RodapeFonte } from '../components/RodapeFonte';
 import { FonteOrientacao, OrientacaoNivel } from '../types';
-import { formatarDataPtBr, obterConfigNivel } from '../utils/niveis';
+import { obterConfigNivel } from '../utils/niveis';
 
 interface OrientacoesPageProps {
   nivelInicial: number | null;
@@ -73,12 +74,27 @@ export function OrientacoesPage({ nivelInicial }: OrientacoesPageProps) {
       </header>
 
       {carregando && (
-        <div
-          aria-busy="true"
-          className="space-y-3 rounded-xl border border-slate-200 bg-white p-6"
-        >
-          <p className="text-sm text-slate-700">Carregando orientações...</p>
-          <div className="h-24 animate-pulse rounded-lg bg-slate-200" />
+        <div role="status" aria-busy="true" aria-live="polite" className="space-y-5">
+          <span className="sr-only">Carregando orientações...</span>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[1, 2, 3, 4].map((tab) => (
+              <div
+                key={tab}
+                className="h-12 rounded-xl border border-[#E2DBD0] bg-white p-3"
+              >
+                <div className="mx-auto h-4 w-20 rounded bg-[#E2DBD0]" />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-4 rounded-xl border border-[#E2DBD0] bg-white p-5 sm:p-6">
+            <div className="h-20 rounded-xl bg-[#EAE4DA]" />
+            <div className="h-4 w-48 rounded bg-[#E2DBD0]" />
+            <div className="space-y-2.5">
+              <div className="h-4 w-full rounded bg-[#F3EFE7]" />
+              <div className="h-4 w-5/6 rounded bg-[#F3EFE7]" />
+              <div className="h-4 w-4/6 rounded bg-[#F3EFE7]" />
+            </div>
+          </div>
         </div>
       )}
 
@@ -107,7 +123,7 @@ export function OrientacoesPage({ nivelInicial }: OrientacoesPageProps) {
                   aria-selected={ativo}
                   aria-label={`${n.cor_nome} (${n.titulo})`}
                   onClick={() => setNivelSelecionado(n.nivel)}
-                  className={`flex min-h-[48px] items-center justify-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold transition-colors ${
+                  className={`radar-interativo flex min-h-[48px] items-center justify-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${
                     ativo && styleCfg
                       ? `${styleCfg.borderClass} ${styleCfg.bgCardClass} ${styleCfg.textClass}`
                       : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-100'
@@ -127,7 +143,7 @@ export function OrientacoesPage({ nivelInicial }: OrientacoesPageProps) {
           ) : (
             <article
               aria-label={nivelAtual.titulo}
-              className="space-y-5 rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+              className="radar-cartao space-y-5 rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
             >
               <div
                 className={`rounded-xl border-2 p-4 ${
@@ -161,7 +177,7 @@ export function OrientacoesPage({ nivelInicial }: OrientacoesPageProps) {
           {dados.fontes && dados.fontes.length > 0 && (
             <section
               aria-labelledby="titulo-fontes-orientacoes"
-              className="rounded-xl border border-slate-200 bg-white p-5"
+              className="radar-cartao rounded-xl border border-slate-200 bg-white p-5"
             >
               <h2 id="titulo-fontes-orientacoes" className="text-base font-bold text-slate-950">
                 Fontes oficiais consultadas
@@ -186,10 +202,7 @@ export function OrientacoesPage({ nivelInicial }: OrientacoesPageProps) {
         </>
       )}
 
-      <p className="border-t border-slate-200 pt-3 text-xs text-slate-600">
-        Fonte: Ministério da Saúde (Diretrizes Nacionais e Plano de Contingência 2025), atualizado em{' '}
-        {formatarDataPtBr(dados?.atualizado_em || '2026-11-23')}
-      </p>
+      <RodapeFonte />
     </div>
   );
 }

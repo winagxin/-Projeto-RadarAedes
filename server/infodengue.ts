@@ -353,7 +353,7 @@ async function montarRespostaAlerta(codigoIbge: string, doenca: Doenca, forcarOf
     casosAtual: tendenciaInfo.casosAtual,
     poucosCasos: tendenciaInfo.poucosCasos,
     serie,
-    fonte: consulta?.fonte ?? 'InfoDengue',
+    fonte: consulta?.fonte?.startsWith('InfoDengue') ? 'InfoDengue' : (consulta?.fonte ?? 'InfoDengue'),
     atualizadoEm: maisRecente?.versao_modelo ?? consulta?.data_coleta ?? new Date().toISOString(),
     dataColeta: consulta?.data_coleta ?? null,
     modoOffline: forcarOffline || consulta?.modo_offline === 1,
@@ -403,16 +403,26 @@ function carregarAmostraConsolidadaRj(
   return null;
 }
 
+const FONTE_SERIE_COMPLETA = 'InfoDengue (série 16 sem.)';
+const FONTE_MAPA_RESUMO = 'InfoDengue (mapa)';
+
 export async function obterAlertaMunicipio(codigoIbge: string, doenca: Doenca) {
   const codigo = String(codigoIbge).trim();
   const ultimaConsulta = await buscarUltimaConsulta(codigo, doenca);
+  const serieCacheAtual =
+    ultimaConsulta && ultimaConsulta.modo_offline === 0
+      ? await buscarSerieHistorica(codigo, doenca, 12)
+      : [];
+  const temSerieCompletaEmCache =
+    ultimaConsulta?.fonte === FONTE_SERIE_COMPLETA || serieCacheAtual.length >= 12;
 
-  // Cache de 6 horas somente se a última coleta foi online (não impede retry se só tinha amostra offline)
+  // Cache de 6 horas somente se a última coleta foi online e já trouxe a série completa (não só o resumo de 4 sem. do mapa)
   if (
     process.env.RADAR_FORCE_OFFLINE !== '1' &&
     ultimaConsulta &&
     ultimaConsulta.modo_offline === 0 &&
-    estaDentroDoTtl(ultimaConsulta.data_coleta)
+    estaDentroDoTtl(ultimaConsulta.data_coleta) &&
+    temSerieCompletaEmCache
   ) {
     return montarRespostaAlerta(codigo, doenca, false);
   }
@@ -436,7 +446,7 @@ export async function obterAlertaMunicipio(codigoIbge: string, doenca: Doenca) {
       nome_municipio: municipioExistente?.nome,
       uf: municipioExistente?.uf,
       doenca,
-      fonte: 'InfoDengue',
+      fonte: FONTE_SERIE_COMPLETA,
       modo_offline: false,
       itens: lista,
     });
@@ -710,7 +720,7 @@ export async function streamMapaUf(
           nome_municipio: alvo.nome,
           uf: alvo.uf,
           doenca,
-          fonte: 'InfoDengue',
+          fonte: FONTE_MAPA_RESUMO,
           modo_offline: false,
           itens: lista,
         });

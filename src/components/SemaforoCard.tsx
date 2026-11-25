@@ -1,5 +1,5 @@
 import { AlertCircle, AlertTriangle, OctagonAlert, ShieldCheck } from 'lucide-react';
-import { formatarDataPtBr, formatarSemanaEpi, obterConfigNivel } from '../utils/niveis';
+import { formatarSemanaEpi, obterConfigNivel } from '../utils/niveis';
 
 interface SemaforoCardProps {
   nivel: number | null;
@@ -26,7 +26,7 @@ export function SemaforoCard({ nivel, semanaAtual, dataIniSe, compacto = false }
 
   if (!cfg) {
     return (
-      <div className="rounded-xl border border-slate-300 bg-slate-100 p-5 text-slate-800">
+      <div className="radar-cartao rounded-xl border border-slate-300 bg-slate-100 p-5 text-slate-800">
         <p className="text-base font-semibold">Nível de alerta indisponível</p>
         <p className="mt-1 text-sm text-slate-700">
           Não há leitura numérica de alerta para este município no período consultado.
@@ -35,10 +35,17 @@ export function SemaforoCard({ nivel, semanaAtual, dataIniSe, compacto = false }
     );
   }
 
+  const classePulso =
+    cfg.nivel === 3
+      ? 'radar-pulso-laranja'
+      : cfg.nivel === 4
+      ? 'radar-pulso-vermelho'
+      : '';
+
   return (
     <section
       aria-label={`Semáforo de alerta: ${cfg.rotulo}`}
-      className={`rounded-xl border-2 ${cfg.borderClass} ${cfg.bgCardClass} ${cfg.textClass} ${
+      className={`radar-cartao ${classePulso} rounded-xl border-2 ${cfg.borderClass} ${cfg.bgCardClass} ${cfg.textClass} ${
         compacto ? 'p-4' : 'p-5 sm:p-6'
       }`}
     >

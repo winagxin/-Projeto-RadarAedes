@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink, HeartPulse } from 'lucide-react';
+import { RodapeFonte } from '../components/RodapeFonte';
 import { formatarDataPtBr } from '../utils/niveis';
 
 export function SobreDadosPage() {
@@ -27,7 +28,7 @@ export function SobreDadosPage() {
 
       <section
         aria-labelledby="titulo-fontes"
-        className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+        className="radar-cartao space-y-4 rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
       >
         <h2 id="titulo-fontes" className="text-lg font-bold text-slate-950">
           Fontes oficiais utilizadas
@@ -58,7 +59,17 @@ export function SobreDadosPage() {
             <p className="mt-1 text-xs text-slate-700">
               Versão do modelo observada nos registros:{' '}
               <strong className="font-mono-tabular">
-                {carregando ? 'Carregando...' : formatarDataPtBr(versaoModelo)}
+                {carregando ? (
+                  <>
+                    <span className="sr-only">Carregando versão do modelo...</span>
+                    <span
+                      aria-hidden="true"
+                      className="inline-block h-3.5 w-24 rounded bg-[#E2DBD0] align-middle"
+                    />
+                  </>
+                ) : (
+                  formatarDataPtBr(versaoModelo)
+                )}
               </strong>{' '}
               (<span className="font-mono-tabular">{versaoModelo}</span>)
             </p>
@@ -106,7 +117,7 @@ export function SobreDadosPage() {
 
       <section
         aria-labelledby="titulo-limitacoes"
-        className="space-y-3 rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
+        className="radar-cartao space-y-3 rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
       >
         <h2 id="titulo-limitacoes" className="text-lg font-bold text-slate-950">
           Decisões e limitações conhecidas
@@ -160,9 +171,7 @@ export function SobreDadosPage() {
         </div>
       </section>
 
-      <p className="border-t border-slate-200 pt-3 text-xs text-slate-600">
-        Fonte: InfoDengue e IBGE, atualizado em {formatarDataPtBr(versaoModelo)}
-      </p>
+      <RodapeFonte modeloData={versaoModelo} />
     </div>
   );
 }
