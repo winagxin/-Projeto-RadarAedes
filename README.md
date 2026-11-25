@@ -302,12 +302,6 @@ Recursos implementados e verificados no código da aplicação:
 
 ## Prompts usados
 
-*(Espaço reservado para a dupla registrar os prompts e ajustes realizados durante o desenvolvimento e revisão do projeto.)*
-
-- **Prompt 1 (Planejamento e teste de APIs)**: _Preencher com o prompt usado_
-- **Prompt 2 (Banco de dados e backend)**: _Preencher com o prompt usado_
-- **Prompt 3 (Interface, acessibilidade, mapa e revisão)**: _Preencher com o prompt usado_
-
 ### Prompts de inspeção e preparação para publicação (Render + Neon)
 
 #### Inspeção da escolha entre SQLite e PostgreSQL
