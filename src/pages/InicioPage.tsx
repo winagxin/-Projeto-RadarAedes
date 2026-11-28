@@ -625,7 +625,7 @@ export function InicioPage({
               {resumoEstado.criticos.length > 0 ? (
                 <>
                   <p className="text-xs font-semibold text-[#0F2744]">
-                    Municípios em nível 3 ou 4 no cache
+                    Municípios em nível 3 ou 4
                   </p>
                   <ul className="mt-2 divide-y divide-[#EFEAE1]">
                     {resumoEstado.criticos.map((item) => {
