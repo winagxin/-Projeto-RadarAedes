@@ -293,12 +293,10 @@ Recursos implementados e verificados no código da aplicação:
 
 ### Testes realizados
 
-- **Leitor de tela (Narrador / NVDA)**: _Pendente — preencher com observações e resultado após teste da dupla_ (Data: _dd/mm/aaaa_)
-- **Lighthouse (Chrome DevTools)**: 
-  - Página inicial, modo navegação, 3 execuções em 25/11/2026: acessibilidade 100, 100 e 100; desempenho 96, 97 e 90; boas práticas 100, 100 e 100.
-  - Painel do Rio de Janeiro (dengue), modo Snapshot, em 25/11/2026: 27 de 27 testes de acessibilidade aprovados e 4 de 4 de boas práticas. O modo Snapshot não mede desempenho.
-  - Apontamentos: nenhum.
-- **Navegação completa por teclado (Tab / Shift+Tab / Setas / Enter / Esc)**: _Pendente — preencher após percurso completo nas 6 telas_ (Data: _dd/mm/aaaa_)
+- **Lighthouse (Chrome DevTools), site publicado, 25/11/2026**: página inicial, 3 execuções. Acessibilidade: 100, 100 e 100. Desempenho: 96, 97 e 90. Boas práticas: 100, 100 e 100. Painel do Rio de Janeiro (dengue), em modo Snapshot: 27 de 27 testes de acessibilidade e 4 de 4 de boas práticas aprovados; esse modo não mede desempenho. Essas medições foram feitas antes dos ajustes de teclado e leitor de tela descritos acima; uma nova medição ainda não foi feita.
+- **Leitor de tela (Narrador do Windows)**: teste manual ainda não realizado até 25/11/2026.
+- **Navegação por teclado**: percurso manual completo nas 6 telas ainda não realizado até 25/11/2026; os ajustes foram feitos por revisão de código.
+- **Observação**: o Lighthouse automático cobre apenas parte dos critérios de acessibilidade e não substitui o teste com leitor de tela real.
 
 ## Prompts usados
 

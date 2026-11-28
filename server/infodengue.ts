@@ -243,6 +243,12 @@ export async function listarMunicipios(ufInput: string) {
 
 export type Tendencia = 'sobe' | 'estavel' | 'cai' | 'indisponivel';
 
+function arredondarInteiro(val: unknown): number | null {
+  if (val === null || val === undefined || val === '') return null;
+  const num = Number(val);
+  return Number.isFinite(num) ? Math.round(num) : null;
+}
+
 /**
  * Compara as duas últimas semanas COMPLETAS (descartando a semana mais recente,
  * que pode estar incompleta por atraso de notificação).
@@ -272,8 +278,8 @@ export function calcularTendencia(
   const penultima = serieCronologica[serieCronologica.length - 2];
   const antepenultima = serieCronologica[serieCronologica.length - 3];
 
-  const atual = penultima.casos_est;
-  const anterior = antepenultima.casos_est;
+  const atual = arredondarInteiro(penultima.casos_est);
+  const anterior = arredondarInteiro(antepenultima.casos_est);
 
   if (atual === null || anterior === null) {
     return {
@@ -597,7 +603,7 @@ export async function streamMapaUf(
         semana_epi: row.semana_epi,
         data_ini_se: row.data_ini_se,
         nivel: row.nivel,
-        casos_est: row.casos_est,
+        casos_est: arredondarInteiro(row.casos_est),
         incidencia_100k: row.incidencia_100k,
         versao_modelo: row.versao_modelo,
         data_coleta: row.data_coleta,
@@ -616,7 +622,7 @@ export async function streamMapaUf(
           semana_epi: row.semana_epi,
           data_ini_se: row.data_ini_se,
           nivel: row.nivel,
-          casos_est: row.casos_est,
+          casos_est: arredondarInteiro(row.casos_est),
           incidencia_100k: row.incidencia_100k,
           versao_modelo: row.versao_modelo,
           data_coleta: row.data_coleta,
@@ -632,7 +638,7 @@ export async function streamMapaUf(
           semana_epi: topoAmostra.SE,
           data_ini_se: topoAmostra.data_iniSE ?? null,
           nivel: topoAmostra.nivel,
-          casos_est: topoAmostra.casos_est ?? null,
+          casos_est: arredondarInteiro(topoAmostra.casos_est),
           incidencia_100k: topoAmostra.p_inc100k ?? null,
           versao_modelo: topoAmostra.versao_modelo ?? null,
           data_coleta: amostra?.coletadoEm ?? null,
@@ -741,7 +747,7 @@ export async function streamMapaUf(
           semana_epi: topo?.SE ?? null,
           data_ini_se: topo?.data_iniSE ?? null,
           nivel: topo?.nivel ?? null,
-          casos_est: topo?.casos_est ?? null,
+          casos_est: arredondarInteiro(topo?.casos_est),
           incidencia_100k: topo?.p_inc100k ?? null,
           versao_modelo: topo?.versao_modelo ?? null,
           data_coleta: new Date().toISOString(),
@@ -762,7 +768,7 @@ export async function streamMapaUf(
           semana_epi: fb?.semana_epi ?? topoAmostra?.SE ?? null,
           data_ini_se: fb?.data_ini_se ?? topoAmostra?.data_iniSE ?? null,
           nivel: fb?.nivel ?? topoAmostra?.nivel ?? null,
-          casos_est: fb?.casos_est ?? topoAmostra?.casos_est ?? null,
+          casos_est: arredondarInteiro(fb?.casos_est ?? topoAmostra?.casos_est),
           incidencia_100k: fb?.incidencia_100k ?? topoAmostra?.p_inc100k ?? null,
           versao_modelo: fb?.versao_modelo ?? topoAmostra?.versao_modelo ?? null,
           data_coleta: fb?.data_coleta ?? amostra?.coletadoEm ?? null,

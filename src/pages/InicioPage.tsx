@@ -358,7 +358,15 @@ export function InicioPage({
             </select>
           </div>
 
-          <div className="relative sm:col-span-8" ref={containerComboRef}>
+          <div
+            className="relative sm:col-span-8"
+            ref={containerComboRef}
+            onBlur={(ev) => {
+              if (!ev.currentTarget.contains(ev.relatedTarget as Node)) {
+                setListaAberta(false);
+              }
+            }}
+          >
             <label htmlFor={buscaInputId} className="block text-sm font-semibold text-[#0F2744]">
               Município
             </label>
@@ -403,10 +411,24 @@ export function InicioPage({
                   }
                   if (e.key === 'ArrowDown') {
                     e.preventDefault();
-                    setIndiceAtivo((i) => Math.min(i + 1, Math.max(0, sugestoes.length - 1)));
+                    const proximo = Math.min(indiceAtivo + 1, Math.max(0, sugestoes.length - 1));
+                    setIndiceAtivo(proximo);
+                    const alvo = sugestoes[proximo];
+                    if (alvo) {
+                      document
+                        .getElementById(`mun-opt-${alvo.codigo_ibge}`)
+                        ?.scrollIntoView({ block: 'nearest' });
+                    }
                   } else if (e.key === 'ArrowUp') {
                     e.preventDefault();
-                    setIndiceAtivo((i) => Math.max(i - 1, 0));
+                    const anterior = Math.max(indiceAtivo - 1, 0);
+                    setIndiceAtivo(anterior);
+                    const alvo = sugestoes[anterior];
+                    if (alvo) {
+                      document
+                        .getElementById(`mun-opt-${alvo.codigo_ibge}`)
+                        ?.scrollIntoView({ block: 'nearest' });
+                    }
                   } else if (e.key === 'Enter' && listaAberta && sugestoes[indiceAtivo]) {
                     e.preventDefault();
                     escolherSugestao(sugestoes[indiceAtivo]);
@@ -428,44 +450,48 @@ export function InicioPage({
               )}
             </div>
 
-            {listaAberta && !carregandoMunicipios && (
+            {listaAberta && !carregandoMunicipios && sugestoes.length === 0 && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="absolute z-20 mt-1.5 w-full rounded-xl border border-[#CFC7BA] bg-white px-3.5 py-2.5 text-sm text-slate-600 shadow-lg"
+              >
+                Nenhum município encontrado para &ldquo;{buscaTexto}&rdquo;.
+              </div>
+            )}
+
+            {listaAberta && !carregandoMunicipios && sugestoes.length > 0 && (
               <ul
                 id={listboxId}
                 role="listbox"
                 aria-label="Municípios encontrados"
                 className="absolute z-20 mt-1.5 max-h-64 w-full overflow-y-auto rounded-xl border border-[#CFC7BA] bg-white py-1 shadow-lg"
               >
-                {sugestoes.length === 0 ? (
-                  <li className="px-3.5 py-2.5 text-sm text-slate-600">
-                    Nenhum município encontrado para &ldquo;{buscaTexto}&rdquo;.
-                  </li>
-                ) : (
-                  sugestoes.map((mun, idx) => {
-                    const ativo = idx === indiceAtivo;
-                    const selecionado = municipioEscolhido?.codigo_ibge === mun.codigo_ibge;
-                    return (
-                      <li
-                        key={mun.codigo_ibge}
-                        id={`mun-opt-${mun.codigo_ibge}`}
-                        role="option"
-                        aria-selected={selecionado}
-                        onMouseDown={(ev) => {
-                          ev.preventDefault();
-                          escolherSugestao(mun);
-                        }}
-                        onMouseEnter={() => setIndiceAtivo(idx)}
-                        className={`flex min-h-[44px] cursor-pointer items-center justify-between px-3.5 py-2 text-sm ${
-                          ativo ? 'bg-[#EAEFF5] text-[#0F2744]' : 'text-[#17212B] hover:bg-[#FAF7F2]'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2 font-medium">
-                          <MapPin className="h-4 w-4 text-[#1B4965]" aria-hidden="true" />
-                          {mun.nome}
-                        </span>
-                      </li>
-                    );
-                  })
-                )}
+                {sugestoes.map((mun, idx) => {
+                  const ativo = idx === indiceAtivo;
+                  const selecionado = municipioEscolhido?.codigo_ibge === mun.codigo_ibge;
+                  return (
+                    <li
+                      key={mun.codigo_ibge}
+                      id={`mun-opt-${mun.codigo_ibge}`}
+                      role="option"
+                      aria-selected={selecionado}
+                      onMouseDown={(ev) => {
+                        ev.preventDefault();
+                        escolherSugestao(mun);
+                      }}
+                      onMouseEnter={() => setIndiceAtivo(idx)}
+                      className={`flex min-h-[44px] cursor-pointer items-center justify-between px-3.5 py-2 text-sm ${
+                        ativo ? 'bg-[#EAEFF5] text-[#0F2744]' : 'text-[#17212B] hover:bg-[#FAF7F2]'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 font-medium">
+                        <MapPin className="h-4 w-4 text-[#1B4965]" aria-hidden="true" />
+                        {mun.nome}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
@@ -496,7 +522,7 @@ export function InicioPage({
         </fieldset>
 
         <div className="mt-6 flex flex-col gap-3 border-t border-[#EAE4DA] pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-700">
+          <p aria-live="polite" className="text-sm text-slate-700">
             {municipioEscolhido ? (
               <>
                 Selecionado:{' '}
@@ -608,6 +634,11 @@ export function InicioPage({
                         <li key={item.codigo_ibge}>
                           <button
                             type="button"
+                            aria-label={
+                              cfg
+                                ? `Abrir painel de ${item.nome} — ${cfg.rotulo}`
+                                : `Abrir painel de ${item.nome}`
+                            }
                             onClick={() =>
                               onSelecionarMunicipio(
                                 {

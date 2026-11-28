@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   AlertCircle,
   AlertTriangle,
@@ -38,6 +38,9 @@ export function OrientacoesPage({ nivelInicial }: OrientacoesPageProps) {
   const [nivelSelecionado, setNivelSelecionado] = useState<number>(nivelInicial ?? 1);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const baseTabId = useId();
+  const panelId = `${baseTabId}-panel`;
+  const tabRefs = useRef<Record<number, HTMLButtonElement | null>>({});
 
   useEffect(() => {
     if (nivelInicial && [1, 2, 3, 4].includes(nivelInicial)) {
@@ -112,17 +115,43 @@ export function OrientacoesPage({ nivelInicial }: OrientacoesPageProps) {
             aria-label="Selecionar nível de alerta por cor"
             className="grid grid-cols-2 gap-2 sm:grid-cols-4"
           >
-            {dados.niveis.map((n) => {
+            {dados.niveis.map((n, idx) => {
               const ativo = n.nivel === nivelAtual?.nivel;
               const styleCfg = obterConfigNivel(n.nivel);
               return (
                 <button
                   key={n.nivel}
+                  ref={(el) => {
+                    tabRefs.current[n.nivel] = el;
+                  }}
+                  id={`${baseTabId}-tab-${n.nivel}`}
                   type="button"
                   role="tab"
+                  tabIndex={ativo ? 0 : -1}
                   aria-selected={ativo}
+                  aria-controls={panelId}
                   aria-label={`${n.cor_nome} (${n.titulo})`}
                   onClick={() => setNivelSelecionado(n.nivel)}
+                  onKeyDown={(e) => {
+                    const lista = dados.niveis;
+                    let proximoNivel: number | null = null;
+                    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                      proximoNivel = lista[(idx + 1) % lista.length].nivel;
+                    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                      proximoNivel = lista[(idx - 1 + lista.length) % lista.length].nivel;
+                    } else if (e.key === 'Home') {
+                      proximoNivel = lista[0].nivel;
+                    } else if (e.key === 'End') {
+                      proximoNivel = lista[lista.length - 1].nivel;
+                    }
+                    if (proximoNivel !== null) {
+                      e.preventDefault();
+                      setNivelSelecionado(proximoNivel);
+                      requestAnimationFrame(() => {
+                        tabRefs.current[proximoNivel as number]?.focus();
+                      });
+                    }
+                  }}
                   className={`radar-interativo flex min-h-[48px] items-center justify-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${
                     ativo && styleCfg
                       ? `${styleCfg.borderClass} ${styleCfg.bgCardClass} ${styleCfg.textClass}`
@@ -142,7 +171,10 @@ export function OrientacoesPage({ nivelInicial }: OrientacoesPageProps) {
             </p>
           ) : (
             <article
-              aria-label={nivelAtual.titulo}
+              id={panelId}
+              role="tabpanel"
+              tabIndex={0}
+              aria-labelledby={`${baseTabId}-tab-${nivelAtual.nivel}`}
               className="radar-cartao space-y-5 rounded-xl border border-slate-200 bg-white p-5 sm:p-6"
             >
               <div
@@ -192,6 +224,7 @@ export function OrientacoesPage({ nivelInicial }: OrientacoesPageProps) {
                       className="inline-flex items-start gap-1.5 font-medium text-blue-800 underline hover:text-blue-950"
                     >
                       <span>{fonte.titulo}</span>
+                      <span className="sr-only"> (abre em nova aba)</span>
                       <ExternalLink className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                     </a>
                   </li>

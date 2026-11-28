@@ -18,6 +18,8 @@
     background-color: var(--radar-bg);
     color: #17212b;
     scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+    scroll-padding-bottom: 5rem;
   }
 
   h1, h2, h3 {
@@ -34,6 +36,23 @@
   [data-surface="dark"] :focus-visible {
     outline: 3px solid #ffffff;
     outline-offset: 2px;
+  }
+
+  .leaflet-container:focus-visible {
+    outline: 3px solid #1b4965;
+    outline-offset: -3px;
+  }
+
+  .radar-ponto-grafico:focus {
+    outline: none;
+  }
+
+  .radar-ponto-grafico .radar-anel-foco {
+    opacity: 0;
+  }
+
+  .radar-ponto-grafico:focus-visible .radar-anel-foco {
+    opacity: 1;
   }
 }
 

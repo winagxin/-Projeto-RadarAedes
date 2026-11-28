@@ -218,6 +218,11 @@ function toNullableNumber(val: unknown): number | null {
   return Number.isFinite(num) ? num : null;
 }
 
+function toNullableInt(val: unknown): number | null {
+  const num = toNullableNumber(val);
+  return num !== null ? Math.round(num) : null;
+}
+
 function toRequiredNumber(val: unknown): number {
   const num = Number(val);
   return Number.isFinite(num) ? num : 0;
@@ -254,10 +259,10 @@ function mapAlertaRow(row: Record<string, unknown>): AlertaSemanalRow {
     semana_epi: toRequiredNumber(row.semana_epi),
     data_ini_se: toRequiredNumber(row.data_ini_se),
     nivel: toRequiredNumber(row.nivel),
-    casos_est: toNullableNumber(row.casos_est),
-    casos_est_min: toNullableNumber(row.casos_est_min),
-    casos_est_max: toNullableNumber(row.casos_est_max),
-    casos: toNullableNumber(row.casos),
+    casos_est: toNullableInt(row.casos_est),
+    casos_est_min: toNullableInt(row.casos_est_min),
+    casos_est_max: toNullableInt(row.casos_est_max),
+    casos: toNullableInt(row.casos),
     incidencia_100k: toNullableNumber(row.incidencia_100k),
     versao_modelo: row.versao_modelo != null ? String(row.versao_modelo) : null,
     is_teste: toRequiredNumber(row.is_teste),
@@ -272,7 +277,7 @@ function mapAlertaResumoUfRow(row: Record<string, unknown>): AlertaResumoUfRow {
     semana_epi: toNullableNumber(row.semana_epi),
     data_ini_se: toNullableNumber(row.data_ini_se),
     nivel: toNullableNumber(row.nivel),
-    casos_est: toNullableNumber(row.casos_est),
+    casos_est: toNullableInt(row.casos_est),
     incidencia_100k: toNullableNumber(row.incidencia_100k),
     versao_modelo: row.versao_modelo != null ? String(row.versao_modelo) : null,
     data_coleta: row.data_coleta != null ? String(row.data_coleta) : null,
@@ -578,17 +583,16 @@ export async function salvarConsultaEAlertas(
         const testes: number[] = [];
 
         for (const item of itensValidos) {
-          const casosInt = toNullableNumber(item.casos);
           consultaIds.push(consultaId);
           codigos.push(codigo);
           doencas.push(params.doenca);
           semanasEpi.push(item.SE);
           datasIniSe.push(Number(item.data_iniSE));
           niveis.push(item.nivel);
-          casosEst.push(toNullableNumber(item.casos_est));
-          casosEstMin.push(toNullableNumber(item.casos_est_min));
-          casosEstMax.push(toNullableNumber(item.casos_est_max));
-          casos.push(casosInt !== null ? Math.round(casosInt) : null);
+          casosEst.push(toNullableInt(item.casos_est));
+          casosEstMin.push(toNullableInt(item.casos_est_min));
+          casosEstMax.push(toNullableInt(item.casos_est_max));
+          casos.push(toNullableInt(item.casos));
           incidencias.push(toNullableNumber(item.p_inc100k));
           versoesModelo.push(item.versao_modelo ?? null);
           testes.push(isTesteInt);
@@ -681,7 +685,6 @@ export async function salvarConsultaEAlertas(
     `);
 
     for (const item of itensValidos) {
-      const casosInt = toNullableNumber(item.casos);
       upsertAlerta.run(
         consultaId,
         codigo,
@@ -689,10 +692,10 @@ export async function salvarConsultaEAlertas(
         item.SE,
         Number(item.data_iniSE),
         item.nivel,
-        toNullableNumber(item.casos_est),
-        toNullableNumber(item.casos_est_min),
-        toNullableNumber(item.casos_est_max),
-        casosInt !== null ? Math.round(casosInt) : null,
+        toNullableInt(item.casos_est),
+        toNullableInt(item.casos_est_min),
+        toNullableInt(item.casos_est_max),
+        toNullableInt(item.casos),
         toNullableNumber(item.p_inc100k),
         item.versao_modelo ?? null,
         isTesteInt

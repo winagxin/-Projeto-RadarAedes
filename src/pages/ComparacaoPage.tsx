@@ -84,7 +84,10 @@ export function ComparacaoPage({
   const [resultados, setResultados] = useState<Record<string, EstadoItemComparacao>>({});
   const [removendoCodigos, setRemovendoCodigos] = useState<string[]>([]);
   const [tentativa, setTentativa] = useState(0);
+  const [anuncioComparacao, setAnuncioComparacao] = useState('');
   const timeoutsRef = useRef<number[]>([]);
+  const removerCardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const selectMunRef = useRef<HTMLSelectElement>(null);
 
   const ufSelectId = useId();
   const munSelectId = useId();
@@ -197,6 +200,7 @@ export function ComparacaoPage({
       nome: alvo.nome,
       uf: alvo.uf || ufAdd,
     });
+    setAnuncioComparacao(`${alvo.nome} adicionado à comparação.`);
   }
 
   function adicionarSugestoesRj() {
@@ -208,6 +212,7 @@ export function ComparacaoPage({
     for (const item of iniciais) {
       onAdicionarSeguido(item);
     }
+    setAnuncioComparacao('Três municípios de exemplo adicionados à comparação.');
   }
 
   useEffect(() => {
@@ -218,8 +223,24 @@ export function ComparacaoPage({
     };
   }, []);
 
+  function focarAposRemocao(codigoRemovido: string) {
+    const idx = seguidos.findIndex((s) => s.codigo_ibge === codigoRemovido);
+    const restantes = seguidos.filter((s) => s.codigo_ibge !== codigoRemovido);
+    if (restantes.length === 0) {
+      requestAnimationFrame(() => selectMunRef.current?.focus());
+      return;
+    }
+    const proximo = restantes[Math.min(Math.max(0, idx), restantes.length - 1)];
+    if (proximo) {
+      requestAnimationFrame(() => {
+        removerCardRefs.current[proximo.codigo_ibge]?.focus();
+      });
+    }
+  }
+
   function solicitarRemocao(codigoIbge: string) {
     if (removendoCodigos.includes(codigoIbge)) return;
+    const alvo = seguidos.find((s) => s.codigo_ibge === codigoIbge);
 
     const prefereReduzido =
       typeof window !== 'undefined' &&
@@ -227,14 +248,18 @@ export function ComparacaoPage({
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (prefereReduzido) {
+      focarAposRemocao(codigoIbge);
       onRemoverSeguido(codigoIbge);
+      if (alvo) setAnuncioComparacao(`${alvo.nome} removido da comparação.`);
       return;
     }
 
     setRemovendoCodigos((prev) => [...prev, codigoIbge]);
     const id = window.setTimeout(() => {
+      focarAposRemocao(codigoIbge);
       setRemovendoCodigos((prev) => prev.filter((c) => c !== codigoIbge));
       onRemoverSeguido(codigoIbge);
+      if (alvo) setAnuncioComparacao(`${alvo.nome} removido da comparação.`);
     }, 190);
     timeoutsRef.current.push(id);
   }
@@ -290,6 +315,10 @@ export function ComparacaoPage({
         </div>
       </header>
 
+      <div role="status" aria-live="polite" className="sr-only">
+        {anuncioComparacao}
+      </div>
+
       {/* Formulário para adicionar até 3 municípios */}
       <form
         onSubmit={aoAdicionar}
@@ -341,6 +370,7 @@ export function ComparacaoPage({
               Selecionar município
             </label>
             <select
+              ref={selectMunRef}
               id={munSelectId}
               disabled={carregandoListaMun || municipiosFiltrados.length === 0}
               value={munSelecionadoCodigo}
@@ -454,6 +484,9 @@ export function ComparacaoPage({
                         )}
                       </div>
                       <button
+                        ref={(el) => {
+                          removerCardRefs.current[mun.codigo_ibge] = el;
+                        }}
                         type="button"
                         disabled={estaRemovendo}
                         onClick={() => solicitarRemocao(mun.codigo_ibge)}
@@ -494,7 +527,10 @@ export function ComparacaoPage({
                     {!item?.carregando && !item?.erro && d && (
                       <>
                         {d.vazio ? (
-                          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                          <div
+                            role="status"
+                            className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
+                          >
                             Não há casos de {NOMES_DOENCA[doenca].toLowerCase()} registrados no
                             InfoDengue para este município em {new Date().getFullYear()}. Isso não
                             significa ausência de risco: pode haver atraso ou falta de notificação.
@@ -530,7 +566,7 @@ export function ComparacaoPage({
                                   <NumeroAnimado
                                     key={`cmp-est-${mun.codigo_ibge}-${doenca}`}
                                     valor={ultimaSe?.casos_est}
-                                    maxCasas={1}
+                                    maxCasas={0}
                                     minCasas={0}
                                   />
                                 </dd>
@@ -578,8 +614,8 @@ export function ComparacaoPage({
                                 </dd>
                                 {d.casosAnterior !== null && d.casosAtual !== null ? (
                                   <p className="text-xs text-slate-600">
-                                    de {formatarNumeroPtBr(d.casosAnterior, 1, 0)} para{' '}
-                                    {formatarNumeroPtBr(d.casosAtual, 1, 0)} casos est.
+                                    de {formatarNumeroPtBr(d.casosAnterior, 0, 0)} para{' '}
+                                    {formatarNumeroPtBr(d.casosAtual, 0, 0)} casos est.
                                     {d.poucosCasos ? ' · poucos casos: variação instável' : ''}
                                   </p>
                                 ) : d.tendencia === 'indisponivel' && tend?.explicacao ? (
@@ -595,6 +631,7 @@ export function ComparacaoPage({
 
                   <button
                     type="button"
+                    aria-label={`Ver painel de ${mun.nome}`}
                     onClick={() => onAbrirPainel(mun)}
                     className="radar-interativo mt-4 min-h-[42px] w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-100"
                   >
@@ -700,7 +737,7 @@ export function ComparacaoPage({
                         )}
                       </td>
                       <td className="py-2.5 pr-4 text-right text-slate-900">
-                        {formatarNumeroPtBr(ultimaSe?.casos_est, 1, 0)}
+                        {formatarNumeroPtBr(ultimaSe?.casos_est, 0, 0)}
                       </td>
                       <td className="py-2.5 pr-4 text-right text-slate-700">
                         {formatarNumeroPtBr(ultimaSe?.incidencia_100k, 1, 1)}
@@ -716,8 +753,8 @@ export function ComparacaoPage({
                             </span>
                             {d.casosAnterior !== null && d.casosAtual !== null ? (
                               <span className="block text-xs text-slate-600">
-                                de {formatarNumeroPtBr(d.casosAnterior, 1, 0)} para{' '}
-                                {formatarNumeroPtBr(d.casosAtual, 1, 0)} casos est.
+                                de {formatarNumeroPtBr(d.casosAnterior, 0, 0)} para{' '}
+                                {formatarNumeroPtBr(d.casosAtual, 0, 0)} casos est.
                                 {d.poucosCasos ? ' · poucos casos: variação instável' : ''}
                               </span>
                             ) : d.tendencia === 'indisponivel' && tend?.explicacao ? (
@@ -732,6 +769,7 @@ export function ComparacaoPage({
                         <div className="inline-flex items-center gap-2">
                           <button
                             type="button"
+                            aria-label={`Ver painel de ${mun.nome}`}
                             onClick={() => onAbrirPainel(mun)}
                             className="radar-interativo min-h-[36px] rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-100"
                           >

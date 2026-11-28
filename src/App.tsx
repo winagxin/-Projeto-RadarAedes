@@ -28,7 +28,11 @@ export default function App() {
   const [seguidos, setSeguidos] = useState<MunicipioSeguido[]>(() => lerMunicipiosSeguidos());
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
 
+  const [anuncioRota, setAnuncioRota] = useState('');
+
   const mainRef = useRef<HTMLElement>(null);
+  const botaoMenuMobileRef = useRef<HTMLButtonElement>(null);
+  const primeiraMontagemRef = useRef(true);
 
   const linksNav: Array<{ id: RotaPagina; label: string }> = [
     { id: 'inicio', label: 'Início' },
@@ -38,6 +42,25 @@ export default function App() {
     { id: 'orientacoes', label: 'O que fazer' },
     { id: 'sobre', label: 'Sobre os dados' },
   ];
+
+  function obterTituloRota(r: RotaPagina): string {
+    switch (r) {
+      case 'inicio':
+        return 'Início — Consulta por município';
+      case 'painel':
+        return municipio
+          ? `Painel de ${municipio.nome} (${municipio.uf})`
+          : 'Painel do município';
+      case 'mapa':
+        return `Mapa da UF — ${uf}`;
+      case 'comparar':
+        return 'Comparar municípios seguidos';
+      case 'orientacoes':
+        return 'O que fazer por nível de alerta';
+      case 'sobre':
+        return 'Sobre os dados';
+    }
+  }
 
   function navegarPara(novaRota: RotaPagina) {
     setRota(novaRota);
@@ -74,9 +97,30 @@ export default function App() {
     }
   }
 
+  const tituloTelaAtual = obterTituloRota(rota);
+
   useEffect(() => {
-    document.title = 'RadarAedes — Semáforo de Alerta de Arboviroses';
-  }, []);
+    document.title = `${tituloTelaAtual} — RadarAedes`;
+    if (primeiraMontagemRef.current) {
+      primeiraMontagemRef.current = false;
+      return;
+    }
+    setAnuncioRota(`Tela aberta: ${tituloTelaAtual}`);
+  }, [rota, tituloTelaAtual]);
+
+  useEffect(() => {
+    if (!menuMobileAberto) return;
+    function aoPressionarTecla(ev: KeyboardEvent) {
+      if (ev.key === 'Escape') {
+        setMenuMobileAberto(false);
+        requestAnimationFrame(() => {
+          botaoMenuMobileRef.current?.focus();
+        });
+      }
+    }
+    document.addEventListener('keydown', aoPressionarTecla);
+    return () => document.removeEventListener('keydown', aoPressionarTecla);
+  }, [menuMobileAberto]);
 
   const geocodeAtual = municipio?.codigo_ibge ?? '3304557';
   const seguindoAtual = seguidos.some((s) => s.codigo_ibge === geocodeAtual);
@@ -135,8 +179,10 @@ export default function App() {
             </button>
 
             <button
+              ref={botaoMenuMobileRef}
               type="button"
               aria-expanded={menuMobileAberto}
+              aria-controls="menu-movel-radar"
               aria-label={menuMobileAberto ? 'Fechar menu' : 'Abrir menu'}
               onClick={() => setMenuMobileAberto((v) => !v)}
               className="radar-interativo inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-[#D4CCC0] bg-white text-[#0F2744] hover:bg-[#F3EFE7] lg:hidden"
@@ -152,6 +198,7 @@ export default function App() {
 
         {menuMobileAberto && (
           <nav
+            id="menu-movel-radar"
             aria-label="Menu móvel"
             className="border-t border-[#E2DBD0] bg-white px-4 py-2 lg:hidden"
           >
@@ -180,10 +227,15 @@ export default function App() {
         )}
       </header>
 
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {anuncioRota}
+      </div>
+
       <main
         id="conteudo-principal"
         ref={mainRef}
         tabIndex={-1}
+        aria-label={tituloTelaAtual}
         className="flex-1 px-4 pt-6 pb-20 outline-none sm:px-6 sm:pt-10"
       >
         <div key={rota} className="radar-fade-tela">

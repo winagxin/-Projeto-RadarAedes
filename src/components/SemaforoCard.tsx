@@ -26,12 +26,16 @@ export function SemaforoCard({ nivel, semanaAtual, dataIniSe, compacto = false }
 
   if (!cfg) {
     return (
-      <div className="radar-cartao rounded-xl border border-slate-300 bg-slate-100 p-5 text-slate-800">
-        <p className="text-base font-semibold">Nível de alerta indisponível</p>
+      <section
+        role="status"
+        aria-label="Semáforo de alerta: Nível de alerta indisponível"
+        className="radar-cartao rounded-xl border border-slate-300 bg-slate-100 p-5 text-slate-800"
+      >
+        <h2 className="text-base font-semibold">Nível de alerta indisponível</h2>
         <p className="mt-1 text-sm text-slate-700">
           Não há leitura numérica de alerta para este município no período consultado.
         </p>
-      </div>
+      </section>
     );
   }
 

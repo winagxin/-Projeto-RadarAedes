@@ -128,7 +128,7 @@ function montarHtmlDadosMunicipio(info: ItemMapa | undefined, codigoIbge: string
   const semanaTexto = info.semana_epi
     ? formatarSemanaEpi(info.semana_epi, info.data_ini_se)
     : 'Sem leitura';
-  const casosTexto = formatarNumeroPtBr(info.casos_est, 1, 0);
+  const casosTexto = formatarNumeroPtBr(info.casos_est, 0, 0);
   const incidenciaTexto =
     info.incidencia_100k !== null ? formatarNumeroPtBr(info.incidencia_100k, 1, 1) : 'N/D';
   const poucosCasos = info.casos_est !== null && info.casos_est < LIMITE_POUCOS_CASOS;
@@ -192,8 +192,8 @@ function montarHtmlMiniGrafico(serie: AlertaSemanalItem[] | undefined): string {
   const ultimo = ultimos[ultimos.length - 1];
   const sIni = String(primeiro.semana_epi).slice(4);
   const sFim = String(ultimo.semana_epi).slice(4);
-  const vIni = formatarNumeroPtBr(primeiro.casos_est, 1, 0);
-  const vFim = formatarNumeroPtBr(ultimo.casos_est, 1, 0);
+  const vIni = formatarNumeroPtBr(primeiro.casos_est, 0, 0);
+  const vFim = formatarNumeroPtBr(ultimo.casos_est, 0, 0);
 
   return `
     <div class="space-y-1">
@@ -234,11 +234,14 @@ export function MapaUfPage({
   const [detalhesCargaAbertos, setDetalhesCargaAbertos] = useState(false);
   const [zoomAtual, setZoomAtual] = useState<number>(7);
   const [tentativa, setTentativa] = useState(0);
+  const [anuncioMapa, setAnuncioMapa] = useState('');
 
   const ufSelectId = useId();
   const filtroId = useId();
+  const nivelSelectId = useId();
   const detalhesCargaId = useId();
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const ultimoFocoAntesPopupRef = useRef<HTMLElement | null>(null);
   const leafletMapRef = useRef<L.Map | null>(null);
   const geoLayerRef = useRef<L.GeoJSON | null>(null);
   const rotulosLayerRef = useRef<L.LayerGroup | null>(null);
@@ -502,6 +505,14 @@ export function MapaUfPage({
     setMunicipioSelecionadoMapa(codigoIbge);
     atualizarEstilosCamada();
 
+    const info = itensRef.current[codigoIbge];
+    if (info) {
+      const cfg = obterConfigNivel(info.nivel);
+      setAnuncioMapa(
+        `${info.nome} selecionado no mapa: ${cfg ? cfg.rotulo : 'Sem informação'}.`
+      );
+    }
+
     const layer = layersByCodeRef.current[codigoIbge];
     const map = leafletMapRef.current;
     if (layer && map) {
@@ -548,6 +559,33 @@ export function MapaUfPage({
     map.on('zoomend', () => {
       setZoomAtual(map.getZoom());
       atualizarRotulosCriticos();
+    });
+
+    map.on('popupopen', (ev) => {
+      const ativo = document.activeElement as HTMLElement | null;
+      if (ativo && !ativo.closest('.leaflet-popup')) {
+        ultimoFocoAntesPopupRef.current = ativo;
+      }
+      const popupEl = ev.popup.getElement();
+      const closeBtn = popupEl?.querySelector('.leaflet-popup-close-button');
+      if (closeBtn) {
+        closeBtn.setAttribute('aria-label', 'Fechar popup');
+        closeBtn.setAttribute('title', 'Fechar popup');
+      }
+    });
+
+    map.on('popupclose', () => {
+      const ativo = document.activeElement as HTMLElement | null;
+      const focoPerdido =
+        !ativo || ativo === document.body || Boolean(ativo.closest('.leaflet-popup'));
+      if (focoPerdido) {
+        const destino = ultimoFocoAntesPopupRef.current;
+        if (destino && destino.isConnected) {
+          requestAnimationFrame(() => destino.focus());
+        } else {
+          requestAnimationFrame(() => mapContainerRef.current?.focus());
+        }
+      }
     });
 
     leafletMapRef.current = map;
@@ -883,7 +921,8 @@ export function MapaUfPage({
             </h2>
             <p className="text-xs text-slate-600">
               Passe o ponteiro ou toque em um município para ver os detalhes. Nomes no mapa apenas
-              para níveis 3 e 4 ao aproximar (zoom {zoomAtual}/{ZOOM_MINIMO_ROTULOS}+).
+              para níveis 3 e 4 ao aproximar (zoom {zoomAtual}/{ZOOM_MINIMO_ROTULOS}+). Há uma
+              tabela alternativa completa logo abaixo.
             </p>
           </div>
           <button
@@ -967,11 +1006,16 @@ export function MapaUfPage({
         </ul>
       </section>
 
+      <div role="status" aria-live="polite" className="sr-only">
+        {anuncioMapa}
+      </div>
+
       {/* Mapa Leaflet */}
       <div className="radar-cartao relative z-0 isolate overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div
           ref={mapContainerRef}
-          aria-label={`Mapa interativo dos municípios de ${ufInicial}. Use a tabela alternativa logo abaixo para navegação completa por teclado.`}
+          role="region"
+          aria-label={`Mapa interativo dos municípios de ${ufInicial}. Há uma tabela alternativa acessível logo abaixo com todos os municípios.`}
           className="h-[420px] w-full sm:h-[480px]"
         />
         {carregandoInicial && (
@@ -1053,19 +1097,24 @@ export function MapaUfPage({
               />
             </div>
 
-            <select
-              aria-label="Filtrar por nível de alerta"
-              value={filtroNivel}
-              onChange={(e) => setFiltroNivel(e.target.value)}
-              className="min-h-[40px] rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900"
-            >
-              <option value="todos">Todos os níveis</option>
-              <option value="4">Nível 4 · Vermelho</option>
-              <option value="3">Nível 3 · Laranja</option>
-              <option value="2">Nível 2 · Amarelo</option>
-              <option value="1">Nível 1 · Verde</option>
-              <option value="indisponivel">Sem informação</option>
-            </select>
+            <div>
+              <label htmlFor={nivelSelectId} className="sr-only">
+                Filtrar por nível de alerta
+              </label>
+              <select
+                id={nivelSelectId}
+                value={filtroNivel}
+                onChange={(e) => setFiltroNivel(e.target.value)}
+                className="min-h-[40px] rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900"
+              >
+                <option value="todos">Todos os níveis</option>
+                <option value="4">Nível 4 · Vermelho</option>
+                <option value="3">Nível 3 · Laranja</option>
+                <option value="2">Nível 2 · Amarelo</option>
+                <option value="1">Nível 1 · Verde</option>
+                <option value="indisponivel">Sem informação</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -1137,7 +1186,7 @@ export function MapaUfPage({
                         {cfg ? cfg.rotulo : 'Sem informação'}
                       </td>
                       <td className="py-2.5 pr-4 text-right text-slate-800">
-                        {formatarNumeroPtBr(item.casos_est, 1, 0)}
+                        {formatarNumeroPtBr(item.casos_est, 0, 0)}
                       </td>
                       <td className="py-2.5 pr-4 text-right text-slate-700">
                         {formatarNumeroPtBr(item.incidencia_100k, 1, 1)}
@@ -1147,6 +1196,7 @@ export function MapaUfPage({
                           <button
                             type="button"
                             aria-pressed={selecionado}
+                            aria-label={`Ver ${item.nome} no mapa`}
                             onClick={() => selecionarMunicipioNoMapa(item.codigo_ibge)}
                             className={`radar-interativo inline-flex min-h-[36px] items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold ${
                               selecionado
@@ -1159,6 +1209,7 @@ export function MapaUfPage({
                           </button>
                           <button
                             type="button"
+                            aria-label={`Ver painel de ${item.nome}`}
                             onClick={() =>
                               onAbrirPainelMunicipio(
                                 item.codigo_ibge,

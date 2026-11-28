@@ -53,6 +53,7 @@ export function SobreDadosPage() {
                 className="inline-flex items-center gap-1 font-medium text-blue-800 underline"
               >
                 https://info.dengue.mat.br/services/api
+                <span className="sr-only"> (abre em nova aba)</span>
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
               </a>
             </p>
@@ -92,6 +93,7 @@ export function SobreDadosPage() {
                 className="inline-flex items-center gap-1 font-medium text-blue-800 underline"
               >
                 https://servicodados.ibge.gov.br/api/v1/localidades/estados
+                <span className="sr-only"> (abre em nova aba)</span>
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
               </a>
             </p>
@@ -156,8 +158,8 @@ export function SobreDadosPage() {
         </ul>
       </section>
 
-      <section
-        role="note"
+      <aside
+        aria-label="Aviso de saúde pública"
         className="flex items-start gap-3 rounded-xl border-2 border-slate-900 bg-slate-100 p-5 text-slate-950"
       >
         <HeartPulse className="mt-0.5 h-6 w-6 shrink-0 text-red-700" aria-hidden="true" />
@@ -169,7 +171,7 @@ export function SobreDadosPage() {
             procure a UBS/UPA mais próxima ou ligue para o <strong>SAMU 192</strong>.
           </p>
         </div>
-      </section>
+      </aside>
 
       <RodapeFonte modeloData={versaoModelo} />
     </div>

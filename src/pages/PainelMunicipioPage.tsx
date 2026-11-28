@@ -285,8 +285,13 @@ export function PainelMunicipioPage({
 
           {/* Estado vazio (ex.: Zika sem registros no período) */}
           {dados.vazio ? (
-            <section className="radar-cartao rounded-xl border border-slate-200 bg-white p-6">
-              <h2 className="text-lg font-bold text-slate-900">
+            <section
+              role="status"
+              aria-live="polite"
+              aria-labelledby="titulo-sem-registros"
+              className="radar-cartao rounded-xl border border-slate-200 bg-white p-6"
+            >
+              <h2 id="titulo-sem-registros" className="text-lg font-bold text-slate-900">
                 Sem registros para {NOMES_DOENCA[dados.doenca]}
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-700">
@@ -323,7 +328,8 @@ export function PainelMunicipioPage({
               {/* Aviso obrigatório sobre atraso de notificação na semana mais recente */}
               {dados.semanaMaisRecenteIncompleta && dados.semanaAtual && (
                 <div
-                  role="note"
+                  role="status"
+                  aria-live="polite"
                   className="flex items-start gap-3 rounded-xl border border-slate-300 bg-slate-100 px-4 py-3 text-sm text-slate-800"
                 >
                   <Info className="mt-0.5 h-5 w-5 shrink-0 text-slate-700" aria-hidden="true" />
@@ -351,7 +357,7 @@ export function PainelMunicipioPage({
                     <NumeroAnimado
                       key={`est-${geocode}-${doenca}-${ultimaSemana?.semana_epi ?? 0}`}
                       valor={ultimaSemana?.casos_est}
-                      maxCasas={1}
+                      maxCasas={0}
                       minCasas={0}
                     />
                   </p>
@@ -426,7 +432,7 @@ export function PainelMunicipioPage({
                           <NumeroAnimado
                             key={`ant-${geocode}-${doenca}-${ultimaSemana?.semana_epi ?? 0}`}
                             valor={dados.casosAnterior}
-                            maxCasas={1}
+                            maxCasas={0}
                             minCasas={0}
                           />
                         </strong>{' '}
@@ -435,7 +441,7 @@ export function PainelMunicipioPage({
                           <NumeroAnimado
                             key={`atu-${geocode}-${doenca}-${ultimaSemana?.semana_epi ?? 0}`}
                             valor={dados.casosAtual}
-                            maxCasas={1}
+                            maxCasas={0}
                             minCasas={0}
                           />
                         </strong>{' '}

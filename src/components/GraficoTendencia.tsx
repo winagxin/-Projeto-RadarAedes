@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { AlertaSemanalItem } from '../types';
 import {
   formatarDataPtBr,
@@ -105,6 +105,7 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
   const [dicaVisivel, setDicaVisivel] = useState(false);
   const [mostrarTabela, setMostrarTabela] = useState(false);
   const pontosRefs = useRef<Array<SVGGElement | null>>([]);
+  const tabelaId = useId();
 
   if (serie.length === 0) {
     return null;
@@ -187,7 +188,7 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
           </h3>
           <p className="text-sm text-slate-600">
             {tituloMetrica} em {nomeMunicipio}. Passe o mouse, toque ou use as setas para ler cada
-            semana.
+            semana. Há uma tabela alternativa em texto logo abaixo.
           </p>
         </div>
 
@@ -227,6 +228,7 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
             type="button"
             onClick={() => setMostrarTabela((v) => !v)}
             aria-expanded={mostrarTabela}
+            aria-controls={tabelaId}
             className="radar-interativo min-h-[40px] rounded-lg border border-[#CFC7BA] bg-white px-3 py-1.5 text-xs font-semibold text-[#0F2744] hover:bg-[#FAF7F2]"
           >
             {mostrarTabela ? 'Ocultar tabela em texto' : 'Ver alternativa em tabela'}
@@ -277,7 +279,7 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
           <span aria-hidden="true" className="text-slate-400">·</span>
           <span className="tabular-nums">
             Casos est.:{' '}
-            <strong>{formatarNumeroPtBr(pontoSelecionado.item.casos_est, 1, 0)}</strong>
+            <strong>{formatarNumeroPtBr(pontoSelecionado.item.casos_est, 0, 0)}</strong>
           </span>
           <span aria-hidden="true" className="text-slate-400">·</span>
           <span className="tabular-nums">
@@ -311,7 +313,7 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
             </p>
             <p className="mt-1 tabular-nums text-stone-100">
               {metrica === 'casos_est'
-                ? `${formatarNumeroPtBr(pontoSelecionado.item.casos_est, 1, 0)} casos estimados`
+                ? `${formatarNumeroPtBr(pontoSelecionado.item.casos_est, 0, 0)} casos estimados`
                 : `${formatarNumeroPtBr(
                     pontoSelecionado.item.incidencia_100k,
                     1,
@@ -328,7 +330,7 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
         <div className="w-full overflow-x-auto">
           <svg
             viewBox={`0 0 ${width} ${height}`}
-            role="img"
+            role="group"
             aria-labelledby="titulo-grafico-tendencia desc-grafico-tendencia"
             className="h-auto min-w-[560px] w-full select-none"
           >
@@ -356,7 +358,9 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
                   textAnchor="end"
                   className="fill-slate-700 text-[11px] tabular-nums"
                 >
-                  {t.valor.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}
+                  {t.valor.toLocaleString('pt-BR', {
+                    maximumFractionDigits: metrica === 'casos_est' ? 0 : 1,
+                  })}
                 </text>
               </g>
             ))}
@@ -431,7 +435,7 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
                     role="button"
                     aria-label={`${formatarSemanaEpi(p.item.semana_epi, p.item.data_ini_se)}: ${
                       metrica === 'casos_est'
-                        ? `${formatarNumeroPtBr(p.val, 1, 0)} casos estimados`
+                        ? `${formatarNumeroPtBr(p.val, 0, 0)} casos estimados`
                         : `${formatarNumeroPtBr(p.val, 1, 1)} casos por 100 mil habitantes`
                     }, ${cfg?.rotulo || `nível ${p.item.nivel}`} (${formaPorNivel(p.item.nivel)})`}
                     onFocus={() => selecionarIndice(p.idx)}
@@ -445,12 +449,30 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
                       } else if (e.key === 'ArrowLeft' && p.idx > 0) {
                         e.preventDefault();
                         selecionarIndice(p.idx - 1, true);
+                      } else if (e.key === 'Home') {
+                        e.preventDefault();
+                        selecionarIndice(0, true);
+                      } else if (e.key === 'End') {
+                        e.preventDefault();
+                        selecionarIndice(pontos.length - 1, true);
+                      } else if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        selecionarIndice(p.idx);
                       } else if (e.key === 'Escape') {
                         setDicaVisivel(false);
                       }
                     }}
-                    className="cursor-pointer outline-none"
+                    className="radar-ponto-grafico cursor-pointer"
                   >
+                    <circle
+                      cx={p.x}
+                      cy={p.y}
+                      r={12}
+                      fill="none"
+                      stroke="#1B4965"
+                      strokeWidth="2.5"
+                      className="radar-anel-foco pointer-events-none"
+                    />
                     <PontoFormaSvg
                       nivel={p.item.nivel}
                       x={p.x}
@@ -467,7 +489,10 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
       </div>
 
       {/* Alternativa completa em texto/tabela */}
-      <div className={mostrarTabela ? 'mt-5 overflow-x-auto border-t border-[#E2DBD0] pt-4' : 'sr-only'}>
+      <div
+        id={tabelaId}
+        className={mostrarTabela ? 'mt-5 overflow-x-auto border-t border-[#E2DBD0] pt-4' : 'sr-only'}
+      >
         <table className="w-full border-collapse text-left text-sm">
           <caption className="pb-2 text-left text-xs font-medium text-slate-600">
             Série histórica semanal de {nomeMunicipio} (últimas {serie.length} semanas) — nível em
@@ -496,7 +521,7 @@ export function GraficoTendencia({ serie, nomeMunicipio }: GraficoTendenciaProps
                     {cfg?.rotulo ?? `Nível ${s.nivel}`}
                   </td>
                   <td className="py-2 pr-4 text-right font-medium text-[#17212B]">
-                    {formatarNumeroPtBr(s.casos_est, 1, 0)}
+                    {formatarNumeroPtBr(s.casos_est, 0, 0)}
                   </td>
                   <td className="py-2 pr-4 text-right text-slate-700">
                     {s.casos !== null ? s.casos.toLocaleString('pt-BR') : 'N/D'}
