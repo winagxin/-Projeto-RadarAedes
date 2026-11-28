@@ -244,9 +244,9 @@ npm start
 ## Decisões do projeto
 
 - O nível de alerta vem direto do campo `nivel` da API. O app não recalcula nem reinterpreta.
-- Tendência: compara os casos estimados (`casos_est`) das duas últimas semanas completas, descartando a semana mais recente. Variação dentro de ±5% é "Estável". Essa tolerância é decisão do projeto e não vem da fonte.
+- Tendência: compara os casos estimados (`casos_est`) das duas últimas semanas (semana passada vs. semana atual). Variação dentro de ±5% é "Estável". Essa tolerância é decisão do projeto e não vem da fonte.
 - A semana mais recente pode estar incompleta por atraso de notificação, e a tela avisa isso.
-- Aviso de poucos casos: quando `casos_est` de pelo menos uma das duas semanas completas comparadas for menor que 20 (`anterior < 20 || atual < 20`), o app exibe `"poucos casos: variação instável"`. Esse limite de 20 casos é decisão do projeto, e não vem da fonte.
+- Aviso de poucos casos: quando `casos_est` de pelo menos uma das duas semanas comparadas for menor que 20 (`anterior < 20 || atual < 20`), o app exibe `"poucos casos: variação instável"`. Esse limite de 20 casos é decisão do projeto, e não vem da fonte.
 - Janelas de consulta: o painel do município exibe até 12 semanas no gráfico e na série histórica (buscando uma janela de 16 semanas na API), enquanto o Mapa da UF consulta uma janela enxuta de 4 semanas por município para agilizar o carregamento estadual.
 - População exibida: o total de habitantes mostrado no painel vem do campo `pop` retornado pelo InfoDengue (convertido de texto para inteiro ao salvar no banco), porque a API de Localidades do IBGE não inclui população.
 - Cache no SQLite: o servidor grava respostas do InfoDengue em `data/radar_aedes.db` com validade de **6 horas** (`consultas_alerta` e `alerta_semanal`, usando `UNIQUE(codigo_ibge, doenca, semana_epi)` para atualizar semanas sem duplicar) e malhas do IBGE com validade de **24 horas** (`cache_malhas_uf`). O front-end consulta apenas as rotas `/api/*` do servidor.

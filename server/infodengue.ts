@@ -250,8 +250,7 @@ function arredondarInteiro(val: unknown): number | null {
 }
 
 /**
- * Compara as duas últimas semanas COMPLETAS (descartando a semana mais recente,
- * que pode estar incompleta por atraso de notificação).
+ * Compara as duas últimas semanas da série (semana passada vs. semana atual).
  */
 export function calcularTendencia(
   serieCronologica: Array<{ semana_epi: number; casos_est: number | null }>
@@ -263,7 +262,7 @@ export function calcularTendencia(
   casosAtual: number | null;
   poucosCasos: boolean;
 } {
-  if (serieCronologica.length < 3) {
+  if (serieCronologica.length < 2) {
     return {
       tendencia: 'indisponivel',
       variacaoPercentual: null,
@@ -274,12 +273,12 @@ export function calcularTendencia(
     };
   }
 
-  // Penúltima (mais recente completa) vs antepenúltima
-  const penultima = serieCronologica[serieCronologica.length - 2];
-  const antepenultima = serieCronologica[serieCronologica.length - 3];
+  // Semana atual (mais recente) vs semana passada (anterior imediata)
+  const semanaAtual = serieCronologica[serieCronologica.length - 1];
+  const semanaPassada = serieCronologica[serieCronologica.length - 2];
 
-  const atual = arredondarInteiro(penultima.casos_est);
-  const anterior = arredondarInteiro(antepenultima.casos_est);
+  const atual = arredondarInteiro(semanaAtual.casos_est);
+  const anterior = arredondarInteiro(semanaPassada.casos_est);
 
   if (atual === null || anterior === null) {
     return {
@@ -299,7 +298,7 @@ export function calcularTendencia(
       return {
         tendencia: 'estavel',
         variacaoPercentual: 0,
-        semanasComparadas: [antepenultima.semana_epi, penultima.semana_epi],
+        semanasComparadas: [semanaPassada.semana_epi, semanaAtual.semana_epi],
         casosAnterior: anterior,
         casosAtual: atual,
         poucosCasos,
@@ -308,7 +307,7 @@ export function calcularTendencia(
     return {
       tendencia: 'sobe',
       variacaoPercentual: 100,
-      semanasComparadas: [antepenultima.semana_epi, penultima.semana_epi],
+      semanasComparadas: [semanaPassada.semana_epi, semanaAtual.semana_epi],
       casosAnterior: anterior,
       casosAtual: atual,
       poucosCasos,
@@ -323,7 +322,7 @@ export function calcularTendencia(
   return {
     tendencia,
     variacaoPercentual: Number(variacao.toFixed(1)),
-    semanasComparadas: [antepenultima.semana_epi, penultima.semana_epi],
+    semanasComparadas: [semanaPassada.semana_epi, semanaAtual.semana_epi],
     casosAnterior: anterior,
     casosAtual: atual,
     poucosCasos,

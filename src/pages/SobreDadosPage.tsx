@@ -135,9 +135,9 @@ export function SobreDadosPage() {
           </li>
           <li>
             <strong>Tendência com tolerância de ±5%:</strong> a classificação (Sobe, Estável ou Cai)
-            compara <code className="font-mono-tabular">casos_est</code> das duas últimas semanas
-            completas; considerar variação dentro de ±5% como estável é decisão deste projeto e não
-            vem da fonte.
+            compara <code className="font-mono-tabular">casos_est</code> das duas últimas semanas;
+            considerar variação dentro de ±5% como estável é decisão deste projeto e não vem da
+            fonte.
           </li>
           <li>
             <strong>Limite de requisições:</strong> o InfoDengue não documenta limite numérico

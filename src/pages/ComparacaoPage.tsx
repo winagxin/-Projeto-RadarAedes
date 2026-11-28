@@ -444,7 +444,7 @@ export function ComparacaoPage({
             <Info className="mt-0.5 h-5 w-5 shrink-0 text-slate-700" aria-hidden="true" />
             <p>
               A semana mais recente pode estar incompleta por atraso de notificação. A tendência
-              compara as duas últimas semanas completas.
+              compara as duas últimas semanas.
             </p>
           </div>
 

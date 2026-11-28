@@ -142,22 +142,22 @@ export function rotuloTendencia(tendencia: Tendencia): {
     case 'sobe':
       return {
         titulo: 'Tendência: Sobe',
-        explicacao: 'Aumento acima de 5% nos casos estimados entre as duas últimas semanas completas.',
+        explicacao: 'Aumento acima de 5% nos casos estimados entre as duas últimas semanas.',
       };
     case 'cai':
       return {
         titulo: 'Tendência: Cai',
-        explicacao: 'Redução acima de 5% nos casos estimados entre as duas últimas semanas completas.',
+        explicacao: 'Redução acima de 5% nos casos estimados entre as duas últimas semanas.',
       };
     case 'estavel':
       return {
         titulo: 'Tendência: Estável',
-        explicacao: 'Variação dentro de ±5% nos casos estimados entre as duas últimas semanas completas.',
+        explicacao: 'Variação dentro de ±5% nos casos estimados entre as duas últimas semanas.',
       };
     default:
       return {
         titulo: 'Tendência: Indisponível',
-        explicacao: 'Não há ao menos duas semanas completas anteriores suficientes para comparação.',
+        explicacao: 'Não há ao menos duas semanas suficientes para comparação.',
       };
   }
 }

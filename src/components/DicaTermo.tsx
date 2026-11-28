@@ -17,7 +17,7 @@ const EXPLICACOES_TERMOS: Record<TermoDica, { titulo: string; texto: string }> =
   tendencia: {
     titulo: 'Tendência',
     texto:
-      'Compara as duas últimas semanas completas para indicar se os casos estimados estão subindo, caindo ou estáveis.',
+      'Compara as duas últimas semanas para indicar se os casos estimados estão subindo, caindo ou estáveis.',
   },
 };
 

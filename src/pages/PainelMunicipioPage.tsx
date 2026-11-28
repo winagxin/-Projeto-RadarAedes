@@ -405,7 +405,7 @@ export function PainelMunicipioPage({
 
                 <div className="radar-cartao rounded-xl border border-slate-200 bg-white p-4">
                   <p className="text-xs font-semibold text-slate-600">
-                    <DicaTermo termo="tendencia" rotulo="Tendência (2 últimas semanas completas)" />
+                    <DicaTermo termo="tendencia" rotulo="Tendência" />
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <IconeTendencia tendencia={dados.tendencia} />
